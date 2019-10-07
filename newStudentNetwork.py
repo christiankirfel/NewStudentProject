@@ -33,6 +33,7 @@ color_tt2 = '#FF6600'
 
 #Setting up the output directories
 output_path = '/cephfs/user/s6chkirf/newStudentRuns/'
+#Set your own output path
 array_path = output_path + 'arrays/'
 if not os.path.exists(output_path):
     os.makedirs(output_path)
@@ -50,16 +51,18 @@ class neuralNetworkEnvironment(object):
     def __init__(self, variables):
         #At the moment not may variables are passed to the class. You might want to change this
         #A list of more general settings
-        self.variables = np.array(["mass_lep1jet2", "pTsys_lep1lep2met", "pTsys_jet1jet2", "mass_lep1jet1", "deltapT_lep1_jet1", "deltaR_lep1_jet2", "deltaR_lep1lep2_jet2", "mass_lep2jet1", "pT_jet2", "deltaR_lep1_jet1", "deltaR_lep1lep2_jet1jet2met", "deltaR_lep2_jet2", "cent_lep2jet2", "deltaR_lep2_jet1"])
+        self.variables = np.array(["pt_lep1", "eta_lep1"])
         #The seed is used to make sure that both the events and the labels are shuffeled the same way because they are not inherently connected.
         self.seed = 193
         #All information necessary for the input
         #The exact data and targets are set later
-        self.input_path = "/cephfs/user/s6chkirf/work/area/run/test_ANNinput.root"
-        self.signal_sample = "wt_nominal"
+        #self.input_path = "/cephfs/user/s6chkirf/work/area/run/test_ANNinput.root"
+        self.signal_path = "/cephfs/user/s6chkirf/mc16d.412063.aMCPy8EG_tllq_nf4.FS.nominal.root"
+        self.background_path = "/cephfs/user/s6chkirf/mc16e.364250.Sh222_llll.FS.nominal.root"
+        self.signal_sample = "THqLoop_nominal"
         self.background_sample = "tt_nominal"
-        self.signal_tree = ur.open(self.input_path)[self.signal_sample]
-        self.background_tree = ur.open(self.input_path)[self.background_sample]
+        self.signal_tree = ur.open(self.signal_path)['THqLoop_nominal']
+        self.background_tree = ur.open(self.background_path)['THqLoop_nominal']
         self.sample_training = None
         self.sample_validation = None
         self.target_training = None
@@ -75,7 +78,7 @@ class neuralNetworkEnvironment(object):
         #All information for the length of the training. Beware that epochs might only come into the pretraining
         #Iterations are used for the adversarial part of the training
         #If you want to make the training longer you want to change these numbers, there is no early stopping atm, feel free to add it
-        self.discriminator_epochs = 100
+        self.discriminator_epochs = 10
         self.batchSize = 512
         #Setup of the networks, nodes and layers
         self.discriminator_layers = 4
