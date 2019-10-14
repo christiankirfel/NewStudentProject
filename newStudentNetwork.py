@@ -5,6 +5,7 @@ import math
 import sys
 from keras.models import Sequential, Model
 from keras.layers import Dense, Input, BatchNormalization, Dropout
+from keras.callbacks import EarlyStopping
 from keras import metrics
 from keras.optimizers import SGD
 from keras.losses import binary_crossentropy
@@ -51,7 +52,7 @@ class neuralNetworkEnvironment(object):
     def __init__(self, variables):
         #At the moment not may variables are passed to the class. You might want to change this
         #A list of more general settings
-        self.variables = np.array(["pt_lep1", "eta_lep1"])
+        self.variables = np.array(["pt_lep1", "eta_lep1", "pt_lep2", "eta_lep2", "E_lep1", "E_lep2", "m_met", "E_jet1", "pt_lep3", "mass_jet2", "m_sumet", "pt_jet1", "E_lep2"])
         #The seed is used to make sure that both the events and the labels are shuffeled the same way because they are not inherently connected.
         self.seed = 193
         #All information necessary for the input
@@ -78,13 +79,13 @@ class neuralNetworkEnvironment(object):
         #All information for the length of the training. Beware that epochs might only come into the pretraining
         #Iterations are used for the adversarial part of the training
         #If you want to make the training longer you want to change these numbers, there is no early stopping atm, feel free to add it
-        self.discriminator_epochs = 10
+        self.discriminator_epochs = 2000
         self.batchSize = 512
         #Setup of the networks, nodes and layers
-        self.discriminator_layers = 4
-        self.discriminator_nodes = 128
+        self.discriminator_layers = 3
+        self.discriminator_nodes = 32
         #Setup of the networks, loss and optimisation
-        self.discriminator_optimizer = SGD(lr = 0.1, momentum = 0.5)
+        self.discriminator_optimizer = SGD(lr = 0.005, momentum = 0.3)
         self.discriminator_dropout = 0.1
         self.discriminator_loss = binary_crossentropy
 
@@ -97,6 +98,8 @@ class neuralNetworkEnvironment(object):
         self.threshold = 0.
         self.auc = 0.  #Area under the curve
 
+        #Adding Callbacks for model and training
+        self.EarlyStop1 = EarlyStopping(monitor='loss', mode='min', verbose =1, patience = 100)
 
 #Initializing the data and target samples
 #The split function cuts into a training sample and a test sample
@@ -169,7 +172,7 @@ class neuralNetworkEnvironment(object):
 
         self.model_discriminator.summary()
 
-        self.discriminator_history = self.model_discriminator.fit(self.sample_training, self.target_training.ravel(), epochs=self.discriminator_epochs, batch_size = self.batchSize, sample_weight = self.weight_training.ravel(), validation_data = (self.sample_validation, self.target_validation, self.weight_validation.ravel()))
+        self.discriminator_history = self.model_discriminator.fit(self.sample_training, self.target_training.ravel(), epochs=self.discriminator_epochs, batch_size = self.batchSize, sample_weight = self.weight_training.ravel(), validation_data = (self.sample_validation, self.target_validation, self.weight_validation.ravel()), callbacks=[self.EarlyStop1])
         self.discriminator_history_array.append(self.discriminator_history)
         print(self.discriminator_history.history.keys())
 
