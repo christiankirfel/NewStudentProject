@@ -1,0 +1,15 @@
+nan     312
+nan     500
+nan     960
+nan     2325
+nan     2822
+nan     2971
+nan     4218
+nan     4642
+nan     4831
+nan     4926
+nan     5019
+nan     5602
+nan     6108
+nan     6177
+nan     6212

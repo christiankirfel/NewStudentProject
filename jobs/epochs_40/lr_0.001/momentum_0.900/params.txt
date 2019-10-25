@@ -1,0 +1,13 @@
+We are using the SGD optimizer at the moment
+Number of epochs: 40
+Batch Size: 64
+Number of hidden layers: 10
+Number of nodes: 64
+Dropout: 0.30
+Validation fraction: 0.20
+Learning rate:0.00
+Momentum:0.90
+Loss after 40 epochs: 6.27166e-06
+Validation Loss after 40 epochs: 5.13523e-06
+Discriminator AUC:0.380
+Runtime of program: 103.03 seconds
