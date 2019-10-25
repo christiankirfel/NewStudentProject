@@ -95,7 +95,7 @@ class neuralNetworkEnvironment(object):
         #All information for the length of the training. Beware that epochs might only come into the pretraining
         #Iterations are used for the adversarial part of the training
         #If you want to make the training longer you want to change these numbers, there is no early stopping atm, feel free to add it
-        self.discriminator_epochs = 400
+        self.discriminator_epochs = 200
         self.batchSize = 50
         #Setup of the networks, nodes and layers
         self.discriminator_layers = 3
