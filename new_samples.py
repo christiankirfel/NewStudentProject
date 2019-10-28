@@ -73,11 +73,15 @@ class neuralNetworkEnvironment(object):
         self.input_path_sample = "/cephfs/user/s6pinogg/PietBachelor/signal_tZq/tZq/mc16a.412063.aMCPy8EG_tllq_nf4.FS.nominal.root"
         self.input_path_background = "/cephfs/user/s6pinogg/PietBachelor/background_NN/nBosons/mc16a.364253.Sh222_lllv.FS.nominal.root"
         self.input_path_background_2 = "/cephfs/user/s6pinogg/PietBachelor/background_NN/nBosons/mc16a.364250.Sh222_llll.FS.nominal.root" ## NEW
+        self.input_path_background_3 = "/cephfs/user/s6pinogg/PietBachelor/18-10_tZVar/ttV/ttbar/mc16a.410470.PhPy8EG_ttbar_hdamp258p75_l.FS.nominal.root"## NEW
+
         self.signal_sample = "tHqLoop_nominal"
         self.background_sample = "tHqLoop_nominal"
         self.signal_tree = ur.open(self.input_path_sample)[self.signal_sample]
         self.background_tree = ur.open(self.input_path_background)[self.background_sample]
-        self.background_tree_2 = ur.open(self.input_path_background)[self.background_sample] ## NEW 
+        self.background_tree_2 = ur.open(self.input_path_background_2)[self.background_sample] ## NEW 
+        self.background_tree_3 = ur.open(self.input_path_background_3)[self.background_sample] ## NEW 
+
         self.sample_training = None
         self.sample_validation = None
         self.target_training = None
@@ -96,22 +100,22 @@ class neuralNetworkEnvironment(object):
         #Iterations are used for the adversarial part of the training
         #If you want to make the training longer you want to change these numbers, there is no early stopping atm, feel free to add it
         self.discriminator_epochs = 200
-        self.batchSize = 50
+        self.batchSize = 64
         #Setup of the networks, nodes and layers
         self.discriminator_layers = 3
-        self.discriminator_nodes = 190
+        self.discriminator_nodes = 128
         #Setup of the networks, loss and optimisation
         ## just an integer
         self.queue = 3
         ##
-        self.my_optimizer = 'SGD'
+        self.my_optimizer = 'Adam'
         self.discriminator_lr = float(sys.argv[1])
         self.discriminator_momentum = 0.9
         self.discriminator_optimizer = SGD(lr = self.discriminator_lr, momentum = self.discriminator_momentum)
         self.discriminator_optimizer_adam = Adam(lr = self.discriminator_lr)
         self.discriminator_dropout = 0.3
         self.discriminator_loss = binary_crossentropy
-        self.validation_fraction = 0.2
+        self.validation_fraction = 0.05
 
         self.output_job = output_path + 'epochs_%i/lr_%.3f/momentum_%.3f/' % (self.discriminator_epochs,self.discriminator_lr,self.discriminator_momentum)
         self.output_lr = output_path + 'epochs_%i/' % (self.discriminator_epochs)
@@ -141,10 +145,10 @@ class neuralNetworkEnvironment(object):
         #print(self.signal_tree.pandas.df("m_top").to_numpy())
 
         self.events_signal = self.signal_tree.pandas.df(self.variables).to_numpy()
-        self.events_background = np.concatenate([self.background_tree.pandas.df(self.variables).to_numpy(),self.background_tree_2.pandas.df(self.variables).to_numpy()])
+        self.events_background = np.concatenate([self.background_tree.pandas.df(self.variables).to_numpy(),self.background_tree_2.pandas.df(self.variables).to_numpy(),self.background_tree_3.pandas.df(self.variables).to_numpy()])
         #Setting up the weights. The weights for each tree are stored in 'weight_nominal'
         self.weight_signal = self.signal_tree.pandas.df('weight_nominal').to_numpy()
-        self.weight_background = np.concatenate([self.background_tree.pandas.df('weight_nominal').to_numpy(),self.background_tree_2.pandas.df('weight_nominal').to_numpy()])
+        self.weight_background = np.concatenate([self.background_tree.pandas.df('weight_nominal').to_numpy(),self.background_tree_2.pandas.df('weight_nominal').to_numpy(),self.background_tree_3.pandas.df('weight_nominal').to_numpy()])
         #Reshaping the weights
         self.weight_signal = np.reshape(self.weight_signal, (len(self.events_signal), 1))
         self.weight_background = np.reshape(self.weight_background, (len(self.events_background), 1))
@@ -209,8 +213,12 @@ class neuralNetworkEnvironment(object):
     def predictModel(self):
 
         self.model_prediction = self.model.predict(self.sample_training).ravel()
+        self.model_prediction_test = self.model.predict(self.sample_validation).ravel()
         self.fpr, self.tpr, self.threshold = roc_curve(self.target_training, self.model_prediction)
+        self.fpr_test, self.tpr_test, self.threshold_test = roc_curve(self.target_validation, self.model_prediction_test)
         self.auc = auc(self.fpr, self.tpr)
+        self.auc_test = auc(self.fpr_test, self.tpr_test)
+
 
         print('Discriminator AUC:', self.auc)
 
@@ -233,6 +241,7 @@ class neuralNetworkEnvironment(object):
     def plotRoc(self,learning_rate):
         plt.title('Receiver Operating Characteristic with L_r=%.5f,m=%.3f,%i Epoch' % (learning_rate,self.discriminator_momentum,self.discriminator_epochs))
         plt.plot(self.fpr, self.tpr, 'g--', label='$AUC_{train}$ = %0.2f'% self.auc)
+        plt.plot(self.fpr_test, self.tpr_test, 'g--',color ='r', label='$AUC_{test}$ = %0.2f'% self.auc_test)
         plt.legend(loc='lower right')
         plt.plot([0,1],[0,1],'r--')
         plt.xlim([-0.,1.])
@@ -294,7 +303,7 @@ class neuralNetworkEnvironment(object):
         file.write('\n')
         file.write('Validation fraction: %.2f' % (self.validation_fraction))
         file.write('\n')
-        file.write('Learning rate:%.2f' % (self.discriminator_lr))
+        file.write('Learning rate:%.3e' % (self.discriminator_lr))
         file.write('\n')
         file.write('Momentum:%.2f' % (self.discriminator_momentum))
         file.write('\n')

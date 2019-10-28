@@ -1,13 +1,13 @@
-We are using the SGD optimizer at the moment
+We are using the Adam optimizer at the moment
 Number of epochs: 400
-Batch Size: 50
+Batch Size: 80
 Number of hidden layers: 3
-Number of nodes: 190
+Number of nodes: 128
 Dropout: 0.30
-Validation fraction: 0.20
-Learning rate:0.00
+Validation fraction: 0.05
+Learning rate:1.000e-05
 Momentum:0.90
-Loss after 400 epochs: 4.09725e-06
-Validation Loss after 400 epochs: 5.16106e-06
-Discriminator AUC:0.837
-Runtime of program: 672.30 seconds
+Loss after 400 epochs: 3.39824e-06
+Validation Loss after 400 epochs: 3.76276e-06
+Discriminator AUC:0.812
+Runtime of program: 361.51 seconds
