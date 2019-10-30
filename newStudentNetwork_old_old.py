@@ -207,9 +207,6 @@ class neuralNetworkEnvironment(object):
         ax.ticklabel_format(style='sci', axis ='both', scilimits=(0,0))
         plt.gcf().savefig(output_path + 'losses.png')
 
-
-
-
     def plotRoc(self):
         plt.title('Receiver Operating Characteristic')
         plt.plot(self.fpr_training, self.tpr_training, 'b--', label='$AUC_{train}$ = %0.2f'% self.auc_training)
@@ -256,14 +253,14 @@ class neuralNetworkEnvironment(object):
         plt.gcf().clear()
 
 
-    def saveData(self, loop):
+    def saveData(self, loop, data_acc_array, data_loss_array, data_acc_val_array, data_loss_val_array):
         data_acc_array[loop]=self.discriminator_history.history['weighted_binary_accuracy']
         data_acc_val_array[loop]=self.discriminator_history.history['val_weighted_binary_accuracy']
         data_loss_array[loop]=self.discriminator_history.history['loss']
         data_loss_val_array[loop]=self.discriminator_history.history['val_loss']
 
 
-    def plotAccuracy_multi(self, iterations):
+    def plotAccuracy_multi(self, iterations, data_acc_array):
         for i in range(iterations):
             plt.plot(data_acc_array[i], label=("discriminator_dropout=", 0.1*i))
         plt.title('model accuracy')
@@ -275,7 +272,7 @@ class neuralNetworkEnvironment(object):
         plt.gcf().clear()
 
 
-    def plotloss_multi(self, iterations):
+    def plotloss_multi(self, iterations, data_loss_array):
         for i in range(iterations):
             plt.plot(data_loss_array[i], label=("discriminator_dropout=", 0.1*i))
         plt.title('loss')
@@ -286,38 +283,68 @@ class neuralNetworkEnvironment(object):
         plt.gcf().savefig(output_path + 'loss_multi.png')
         plt.gcf().clear()
 
+
 ## For putting out multible Graphs 
 ## Itterations is how often the loop should go
-"""
-iterations=2
-epoch=50
-##Arrays for saving Values. They are iterations*epochs large
-data_acc_array=np.zeros((iterations, epoch))
-data_loss_array=np.zeros((iterations, epoch))
-data_acc_val_array=np.zeros((iterations, epoch))
-data_loss_val_array=np.zeros((iterations, epoch))
-##Trains iterations times. The data is saved. The Variable j is changing, so that different things can be tried out (e.g. learning rate*j)
-for j in range(iterations):
-    first_training = neuralNetworkEnvironment(j, epoch)
+## True=Adam, False=SGD
+## DOSEN'T put out a Roc, distribution, accuary or loss curve for a single interation
+## Only for multible.
+def train_multi(iterations, epoch, Adam):
+    ##Arrays for saving Values. They are iterations*epochs large
+    data_acc_array=np.zeros((iterations, epoch))
+    data_loss_array=np.zeros((iterations, epoch))
+    data_acc_val_array=np.zeros((iterations, epoch))
+    data_loss_val_array=np.zeros((iterations, epoch))
+    ##Trains iterations times. The data is saved. The Variable j is changing, so that different things can be tried out (e.g. learning rate*j)
+    for j in range(iterations):
+        first_training = neuralNetworkEnvironment(j, epoch, Adam)
+        first_training.initialize_sample()
+        first_training.buildDiscriminator()
+        first_training.trainDiscriminator()
+        first_training.predictModel()
+        first_training.saveData(j, data_acc_array, data_loss_array, data_acc_val_array, data_loss_val_array)
+    ##All Graphs are plotted in one multiplot
+    first_training.plotloss_multi(iterations, data_loss_array)
+    first_training.plotAccuracy_multi(iterations, data_acc_array)
+
+
+## For putting a single Graph. True=Adam, False=SGD. Puts out a Roc, distribution, accuary or loss curve for a single interation.
+def train_single(epoch, Adam):
+    first_training = neuralNetworkEnvironment(1, epoch, Adam)
     first_training.initialize_sample()
     first_training.buildDiscriminator()
     first_training.trainDiscriminator()
     first_training.predictModel()
-    first_training.saveData(j)
-##All Graphs are plotted in one multiplot
-first_training.plotloss_multi(iterations)
-first_training.plotAccuracy_multi(iterations)
-"""
+    first_training.plotRoc()
+    first_training.plotSeparation()
+    first_training.plotAccuracy()
+    first_training.plotLosses()
 
-first_training = neuralNetworkEnvironment(2, 20, False) #(Changing parameter, epochs, Adam) True=Adam, False=SGD
-first_training.initialize_sample()
-first_training.buildDiscriminator()
-first_training.trainDiscriminator()
-first_training.predictModel()
-first_training.plotRoc()
-first_training.plotSeparation()
-first_training.plotAccuracy()
-first_training.plotLosses()
+## For putting out SGD vs Adam
+## True=Adam, False=SGD
+## DOESN'T put out a Roc, distribution, accuary or loss curve for a single interation
+def train_AdamVsSGD(epoch):
+    ##Arrays for saving Values. They are iterations*epochs large
+    data_acc_array=np.zeros((2, epoch))
+    data_loss_array=np.zeros((2, epoch))
+    data_acc_val_array=np.zeros((2, epoch))
+    data_loss_val_array=np.zeros((2, epoch))
+    ##Trains iterations times. The data is saved. The Variable j is changing, so that different things can be tried out (e.g. learning rate*j)
+    for j in range(2):
+        if j==0:
+            first_training = neuralNetworkEnvironment(j, epoch, True)
+        if j==1:
+            first_training = neuralNetworkEnvironment(j, epoch, False)
+        first_training.initialize_sample()
+        first_training.buildDiscriminator()
+        first_training.trainDiscriminator()
+        first_training.predictModel()
+        first_training.saveData(j, data_acc_array, data_loss_array, data_acc_val_array, data_loss_val_array)
+    ##All Graphs are plotted in one multiplot
+    first_training.plotloss_multi(2, data_loss_array)
+    first_training.plotAccuracy_multi(2, data_acc_array)
+
+train_AdamVsSGD(100)
 
 
 
