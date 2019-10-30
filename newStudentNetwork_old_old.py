@@ -344,7 +344,10 @@ def train_AdamVsSGD(epoch):
     first_training.plotloss_multi(2, data_loss_array)
     first_training.plotAccuracy_multi(2, data_acc_array)
 
-train_AdamVsSGD(100)
+
+#train_multi(10, 100, True)
+#train_single(100, True)
+#train_AdamVsSGD(100)
 
 
 
