@@ -64,23 +64,50 @@ class neuralNetworkEnvironment(object):
         #At the moment not may variables are passed to the class. You might want to change this
         #A list of more general settings
        # self.variables = np.array(['m_b_jf','m_top','eta_jf','mT_W','q_lW','eta_lW','pT_W','pT_lW','m_Z','eta_Z','dR_jf_Z','pT_jf'])
-        self.variables = np.array(['m_b_jf','eta_jf','q_lW','eta_lW','pT_W','pT_lW','m_Z','eta_Z','dR_jf_Z','pT_jf','pT_jr','eta_jr','pT_Z','pT_lW'])
+        self.variables = np.array(['m_b_jf','eta_jf','q_lW','eta_lW','pT_W','pT_lW','m_Z','eta_Z','dR_jf_Z','pT_jf','pT_jr','eta_jr','pT_Z','m_met'])
+        #self.variables = np.array(['eta_jf'])
+
         #The seed is used to make sure that both the events and the labels are shuffeled the same way because they are not inherently connected.
         self.seed = 250
         #All information necessary for the input
         #The exact data and targets are set later
         self.output_job = None 
-        self.input_path_sample = "/cephfs/user/s6pinogg/PietBachelor/signal_tZq/tZq/mc16a.412063.aMCPy8EG_tllq_nf4.FS.nominal.root"
-        self.input_path_background = "/cephfs/user/s6pinogg/PietBachelor/background_NN/nBosons/mc16a.364253.Sh222_lllv.FS.nominal.root"
-        self.input_path_background_2 = "/cephfs/user/s6pinogg/PietBachelor/background_NN/nBosons/mc16a.364250.Sh222_llll.FS.nominal.root" ## NEW
-        self.input_path_background_3 = "/cephfs/user/s6pinogg/PietBachelor/18-10_tZVar/ttV/ttbar/mc16a.410470.PhPy8EG_ttbar_hdamp258p75_l.FS.nominal.root"## NEW
 
-        self.signal_sample = "tHqLoop_nominal"
-        self.background_sample = "tHqLoop_nominal"
+        ### tW ttbar
+        """
+        self.variables = np.array(["mass_lep1jet2", "pTsys_lep1lep2met", "pTsys_jet1jet2", "mass_lep1jet1", "deltapT_lep1_jet1", "deltaR_lep1_jet2", "deltaR_lep1lep2_jet2", "mass_lep2jet1", "pT_jet2", "deltaR_lep1_jet1", "deltaR_lep1lep2_jet1jet2met", "deltaR_lep2_jet2", "cent_lep2jet2", "deltaR_lep2_jet1"])
+        self.input_path_sample = "/cephfs/user/s6chkirf/work/area/run/test_ANNinput.root"
+        self.input_path_background = self.input_path_sample
+        self.signal_sample = "wt_nominal"
+        self.background_sample = "tt_nominal"
+        """
+        ###
+
+
+
+        self.input_path_sample = '/cephfs/user/s6taholm/tHq/run/testPiet/test_tZe.root'
+        self.input_path_background = '/cephfs/user/s6taholm/tHq/run/testVar_fix/diboson_e.root'
+        ##
+
+
+        #self.input_path_sample = "/cephfs/user/s6pinogg/PietBachelor/signal_tZq/tZq/mc16a.412063.aMCPy8EG_tllq_nf4.FS.nominal.root"
+        #self.input_path_background = "/cephfs/user/s6pinogg/PietBachelor/background_NN/nBosons/mc16a.364250.Sh222_llll.FS.nominal.root"
+        #self.input_path_background_2 = "/cephfs/user/s6pinogg/PietBachelor/background_NN/nBosons/mc16d.364250.Sh222_llll.FS.nominal.root"
+        #self.input_path_sample_2 = "/cephfs/user/s6pinogg/PietBachelor/signal_tZq/tZq/mc16d.412063.aMCPy8EG_tllq_nf4.FS.nominal.root"
+        #self.input_path_background_2 = "/cephfs/user/s6pinogg/PietBachelor/background_NN/nBosons/mc16a.364250.Sh222_llll.FS.nominal.root" 
+        #self.input_path_background_3 = "/cephfs/user/s6pinogg/PietBachelor/18-10_tZVar/ttV/ttbar/mc16a.410470.PhPy8EG_ttbar_hdamp258p75_l.FS.nominal.root"
+        #self.input_path_background_4 = "/cephfs/user/s6pinogg/PietBachelor/18-10_tZVar/ttV/mc16e.410157.aMCPy8EG_ttZqq.FS.nominal.root"
+
+        self.signal_sample = "tHqLoop_nominal;1"
+        self.background_sample = "tHqLoop_nominal;1"
         self.signal_tree = ur.open(self.input_path_sample)[self.signal_sample]
+        #self.signal_tree_2 = ur.open(self.input_path_sample_2)[self.signal_sample]
         self.background_tree = ur.open(self.input_path_background)[self.background_sample]
-        self.background_tree_2 = ur.open(self.input_path_background_2)[self.background_sample] ## NEW 
-        self.background_tree_3 = ur.open(self.input_path_background_3)[self.background_sample] ## NEW 
+        #self.background_tree_2 = ur.open(self.input_path_background_2)[self.background_sample]
+        #self.background_tree_2 = ur.open(self.input_path_background_2)[self.background_sample] ## NEW 
+        #self.background_tree_3 = ur.open(self.input_path_background_3)[self.background_sample] ## NEW 
+        #self.background_tree_4 = ur.open(self.input_path_background_4)[self.background_sample] ## ttZ qq 
+
 
         self.sample_training = None
         self.sample_validation = None
@@ -99,23 +126,23 @@ class neuralNetworkEnvironment(object):
         #All information for the length of the training. Beware that epochs might only come into the pretraining
         #Iterations are used for the adversarial part of the training
         #If you want to make the training longer you want to change these numbers, there is no early stopping atm, feel free to add it
-        self.discriminator_epochs = 200
-        self.batchSize = 64
+        self.discriminator_epochs = 50
+        self.batchSize = 512
         #Setup of the networks, nodes and layers
-        self.discriminator_layers = 3
-        self.discriminator_nodes = 128
+        self.discriminator_layers = 10
+        self.discriminator_nodes = 256
         #Setup of the networks, loss and optimisation
         ## just an integer
         self.queue = 3
         ##
-        self.my_optimizer = 'Adam'
+        self.my_optimizer = 'SGD'
         self.discriminator_lr = float(sys.argv[1])
         self.discriminator_momentum = 0.9
         self.discriminator_optimizer = SGD(lr = self.discriminator_lr, momentum = self.discriminator_momentum)
-        self.discriminator_optimizer_adam = Adam(lr = self.discriminator_lr)
-        self.discriminator_dropout = 0.3
+        self.discriminator_optimizer_adam = Adam(lr = self.discriminator_lr,beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay = 1e-6)
+        self.discriminator_dropout = 0.4
         self.discriminator_loss = binary_crossentropy
-        self.validation_fraction = 0.05
+        self.validation_fraction = 0.15
 
         self.output_job = output_path + 'epochs_%i/lr_%.3f/momentum_%.3f/' % (self.discriminator_epochs,self.discriminator_lr,self.discriminator_momentum)
         self.output_lr = output_path + 'epochs_%i/' % (self.discriminator_epochs)
@@ -145,10 +172,12 @@ class neuralNetworkEnvironment(object):
         #print(self.signal_tree.pandas.df("m_top").to_numpy())
 
         self.events_signal = self.signal_tree.pandas.df(self.variables).to_numpy()
-        self.events_background = np.concatenate([self.background_tree.pandas.df(self.variables).to_numpy(),self.background_tree_2.pandas.df(self.variables).to_numpy(),self.background_tree_3.pandas.df(self.variables).to_numpy()])
+        #self.events_background = np.concatenate([self.background_tree.pandas.df(self.variables).to_numpy(),self.background_tree_2.pandas.df(self.variables).to_numpy(),self.background_tree_3.pandas.df(self.variables).to_numpy()])
+        self.events_background = self.background_tree.pandas.df(self.variables).to_numpy()
         #Setting up the weights. The weights for each tree are stored in 'weight_nominal'
-        self.weight_signal = self.signal_tree.pandas.df('weight_nominal').to_numpy()
-        self.weight_background = np.concatenate([self.background_tree.pandas.df('weight_nominal').to_numpy(),self.background_tree_2.pandas.df('weight_nominal').to_numpy(),self.background_tree_3.pandas.df('weight_nominal').to_numpy()])
+        self.weight_signal = np.absolute(self.signal_tree.pandas.df('weight_nominal').to_numpy())
+        self.weight_background = np.absolute(self.background_tree.pandas.df('weight_nominal').to_numpy())
+        #self.weight_background = np.absolute(np.concatenate([self.background_tree.pandas.df('weight_nominal').to_numpy(),self.background_tree_2.pandas.df('weight_nominal').to_numpy(),self.background_tree_3.pandas.df('weight_nominal').to_numpy()]))
         #Reshaping the weights
         self.weight_signal = np.reshape(self.weight_signal, (len(self.events_signal), 1))
         self.weight_background = np.reshape(self.weight_background, (len(self.events_background), 1))
@@ -184,7 +213,7 @@ class neuralNetworkEnvironment(object):
         self.model.add(Dense(self.discriminator_nodes,input_shape=(self.input_dimension)))
         self.model.add(Activation('elu'))
         for layercount in range(self.discriminator_layers - 1):
-            self.model.add(Dense(self.discriminator_nodes,activation = 'relu'))
+            self.model.add(Dense(self.discriminator_nodes,activation = 'elu'))
             self.model.add(BatchNormalization())
             self.model.add(Dropout(self.discriminator_dropout))
         self.model.add(Dense(1,activation='sigmoid'))
@@ -262,7 +291,7 @@ class neuralNetworkEnvironment(object):
             if self.target_validation[i] == 0:
                 self.background_histo.append(self.model_prediction[i])
                 
-        plt.hist(self.signal_histo, range=[0., 1.], linewidth = 2, bins=30, histtype="step", density = True, color=color_tW, label = "Signal")
+        plt.hist(self.signal_histo, range=[0., 1.], linewidth = 2, bins=30, histtype="step",density = True,color=color_tW, label = "Signal")
         plt.hist(self.background_histo, range=[0., 1.], linewidth = 2, bins=30, histtype="step", density = True, color=color_tt, label = "Background")
         plt.title('with L_r=%.5f,m=%.3f,%i Epoch' % (learning_rate,self.discriminator_momentum,self.discriminator_epochs))
         plt.legend()
@@ -345,6 +374,7 @@ class neuralNetworkEnvironment(object):
             val_loss_plot.append(float(data[1]))
             loss_plot.append(float(data[0]))
             auc_list.append(float(data[3]))
+        self.events_signal = self.signal_tree.pandas.df(self.variables).to_numpy()
 
         ### Plot Lists
         plt.plot(lr_list,loss_plot,color = color_tt,label='Training',marker = 'x')
