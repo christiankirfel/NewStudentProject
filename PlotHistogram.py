@@ -8,9 +8,11 @@ import pandas
 from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,AutoMinorLocator)
 
 
-my_path_to_data = '/cephfs/user/s6pinogg/PietBachelor/18-10_tZVar/'
+my_path_to_data = '/cephfs/user/s6pinogg/PietBachelor/tZq_plus_backgrounds/'
 data_tzq = my_path_to_data + 'tZq/'
-data_background_diboson = my_path_to_data + 'nBosons/'
+data_background_diboson = my_path_to_data + 'diboson/'
+data_background_ttbar = my_path_to_data + 'ttbar/'
+data_background_tWZ = my_path_to_data + 'singleTop/'
 mysavedata = '/cephfs/user/s6pinogg/PietBachelor/Histo_Data/'
 
 
@@ -21,19 +23,28 @@ if not os.path.exists(mysavedata):
 class PlotHisto(object):
 
     def __init__(self):
-        self.variables = np.array(['m_b_jf','eta_jf','q_lW','eta_lW','pT_W','pT_lW','m_Z','eta_Z','dR_jf_Z','pT_jf','pT_jr','eta_jr','pT_Z','mT_W','m_top'])
+        self.variables = np.array(['m_b_jf','eta_jf','q_lW','eta_lW','pT_W','pT_lW','m_Z','eta_Z','dR_jf_Z','pT_jf','pT_jr','eta_jr','pT_Z','mT_W','m_top','m_met'])
 
-        self.input_path_sample = data_tzq + "mc16a.412063.aMCPy8EG_tllq_nf4.FS.nominal.root"
-        self.input_path_background = data_background_diboson + 'mc16a.364250.Sh222_llll.FS.nominal.root'
+        self.input_path_sample = data_tzq + "mc16e.412063.aMCPy8EG_tllq_nf4.FS.nominal.root"
+        self.input_path_background = data_background_diboson + 'mc16e.364253.Sh222_lllv.FS.nominal.root'
+        self.input_path_background_ttbar = data_background_ttbar + 'mc16e.410472.PhPy8EG_ttbar_hdamp258p75_2l.FS.nominal.root' 
+        self.input_path_background_tWZ = data_background_tWZ + 'mc16e.410408.aMCPy8EG_tWZ_Ztoll_minDR1.FS.nominal.root' 
 
-        self.signal_sample = "tHqLoop_nominal"
-        self.background_sample = "tHqLoop_nominal"
+
+        self.signal_sample = "tHqLoop_nominal;1"
+        self.background_sample = "tHqLoop_nominal;1"
 
         self.signal_tree = ur.open(self.input_path_sample)[self.signal_sample]
         self.background_tree = ur.open(self.input_path_background)[self.background_sample]
+        self.background_tree_ttbar = ur.open(self.input_path_background_ttbar)[self.background_sample]
+        self.background_tree_tWZ = ur.open(self.input_path_background_tWZ)[self.background_sample]
+
 
         self.signal_m_b_jf = self.signal_tree.pandas.df('m_b_jf').to_numpy()
         self.background_m_b_jf = self.background_tree.pandas.df('m_b_jf').to_numpy()
+        self.background_m_b_jf_ttbar = self.background_tree_ttbar.pandas.df('m_b_jf').to_numpy()
+        self.background_m_b_jf_tWZ = self.background_tree_tWZ.pandas.df('m_b_jf').to_numpy()
+
 
         self.signal_eta_jf = self.signal_tree.pandas.df('eta_jf').to_numpy()
         self.background_eta_jf = self.background_tree.pandas.df('eta_jf').to_numpy()
@@ -78,7 +89,10 @@ class PlotHisto(object):
 
         self.signal_m_top = self.signal_tree.pandas.df('m_top').to_numpy()
         self.background_m_top = self.background_tree.pandas.df('m_top').to_numpy() 
+        self.background_m_top_ttbar = self.background_tree_ttbar.pandas.df('m_top').to_numpy()
 
+        self.signal_m_met = self.signal_tree.pandas.df('m_met').to_numpy()
+        self.background_m_met = self.background_tree.pandas.df('m_met').to_numpy() 
 
     def Plot_m_b_jf(self):
         ax = plt.subplot()
@@ -90,8 +104,10 @@ class PlotHisto(object):
         ax.xaxis.set_ticks_position('both')
         ax.yaxis.set_ticks_position('both')
         ax.tick_params(direction='in',which='minor', length=2)
-        plt.hist(self.signal_m_b_jf, range=[0., 700.], linewidth = .5, bins=15, histtype="step", color='magenta',label='tZq',density = True)
-        plt.hist(self.background_m_b_jf, range=[0., 700.], linewidth = .5, bins=15, histtype="step", color='royalblue', label ='DiBoson 4l',density = True)
+        plt.hist(self.signal_m_b_jf, range=[0., 700.], linewidth = .75, bins=15, histtype="step", color='magenta',label='tZq',density = True)
+        plt.hist(self.background_m_b_jf, range=[0., 700.], linewidth = .75, bins=15, histtype="step", color='royalblue', label ='Diboson 3l1v',density = True)
+        plt.hist(self.background_m_b_jf_ttbar, range=[0., 700.], linewidth = .75, bins=15, histtype="step", color='red', label =r'$t\bar{t}$',density = True)
+        plt.hist(self.background_m_b_jf_tWZ, range=[0., 700.], linewidth = .75, bins=15, histtype="step", color='lime', label =r'$tWZ$',density = True)
         plt.legend(frameon = False)
         plt.xlim(0,700)
 
@@ -112,7 +128,7 @@ class PlotHisto(object):
         ax.yaxis.set_ticks_position('both')
         ax.tick_params(direction='in',which='minor', length=2)
         plt.hist(self.signal_eta_jf, range=[0., 5.], linewidth = .5, bins=15, histtype="step", color='magenta',label='tZq',density = True)
-        plt.hist(self.background_eta_jf, range=[0., 5.], linewidth = .5, bins=15, histtype="step", color='royalblue', label ='DiBoson 4l',density = True)
+        plt.hist(self.background_eta_jf, range=[0., 5.], linewidth = .5, bins=15, histtype="step", color='royalblue', label ='Diboson 3l1v',density = True)
         plt.legend(frameon = False)
         plt.xlim(0,5)
 
@@ -154,7 +170,7 @@ class PlotHisto(object):
         ax.yaxis.set_ticks_position('both')
         ax.tick_params(direction='in',which='minor', length=2)
         plt.hist(self.signal_eta_lW, range=[0., 3], linewidth = .5, bins=12, histtype="step", color='magenta',label='tZq',density = True)
-        plt.hist(self.background_eta_lW, range=[0., 3], linewidth = .5, bins=12, histtype="step", color='royalblue', label ='DiBoson 4l',density = True)
+        plt.hist(self.background_eta_lW, range=[0., 3], linewidth = .5, bins=12, histtype="step", color='royalblue', label ='Diboson 3l1v',density = True)
         plt.legend(frameon = False)
         plt.xlim(0,3)
 
@@ -177,7 +193,7 @@ class PlotHisto(object):
         ax.yaxis.set_ticks_position('both')
         ax.tick_params(direction='in',which='minor', length=2)
         plt.hist(self.signal_pT_W, range=[0., 300.], linewidth = .5, bins=10, histtype="step", color='magenta',label='tZq',density = True)
-        plt.hist(self.background_pT_W, range=[0., 300.], linewidth = .5, bins=10, histtype="step", color='royalblue', label ='DiBoson 4l',density = True)
+        plt.hist(self.background_pT_W, range=[0., 300.], linewidth = .5, bins=10, histtype="step", color='royalblue', label ='Diboson 3l1v',density = True)
         plt.legend(frameon = False)
         plt.xlim(0,300)
 
@@ -199,7 +215,7 @@ class PlotHisto(object):
         ax.yaxis.set_ticks_position('both')
         ax.tick_params(direction='in',which='minor', length=2)
         plt.hist(self.signal_pT_lW, range=[0., 200.], linewidth = .5, bins=10, histtype="step", color='magenta',label='tZq',density = True)
-        plt.hist(self.background_pT_lW, range=[0., 200.], linewidth = .5, bins=10, histtype="step", color='royalblue', label ='DiBoson 4l',density = True)
+        plt.hist(self.background_pT_lW, range=[0., 200.], linewidth = .5, bins=10, histtype="step", color='royalblue', label ='Diboson 3l1v',density = True)
         plt.legend(frameon = False)
         plt.xlim(0,200)
 
@@ -221,7 +237,7 @@ class PlotHisto(object):
         ax.yaxis.set_ticks_position('both')
         ax.tick_params(direction='in',which='minor', length=2)
         plt.hist(self.signal_m_Z, range=[60., 120.], linewidth = .5, bins=24, histtype="step", color='magenta',label='tZq',density = True)
-        plt.hist(self.background_m_Z, range=[60., 120.], linewidth = .5, bins=24, histtype="step", color='royalblue', label ='DiBoson 4l',density = True)
+        plt.hist(self.background_m_Z, range=[60., 120.], linewidth = .5, bins=24, histtype="step", color='royalblue', label ='Diboson 3l1v',density = True)
         plt.legend(frameon = False)
         plt.xlim(60,120)
 
@@ -242,7 +258,7 @@ class PlotHisto(object):
         ax.yaxis.set_ticks_position('both')
         ax.tick_params(direction='in',which='minor', length=2)
         plt.hist(self.signal_eta_Z, range=[0., 5.], linewidth = .5, bins=10, histtype="step", color='magenta',label='tZq',density = True)
-        plt.hist(self.background_eta_Z, range=[0., 5.], linewidth = .5, bins=10, histtype="step", color='royalblue', label ='DiBoson 4l',density = True)
+        plt.hist(self.background_eta_Z, range=[0., 5.], linewidth = .5, bins=10, histtype="step", color='royalblue', label ='Diboson 3l1v',density = True)
         plt.legend(frameon = False)
         plt.xlim(0,5)
 
@@ -263,7 +279,7 @@ class PlotHisto(object):
         ax.yaxis.set_ticks_position('both')
         ax.tick_params(direction='in',which='minor', length=2)
         plt.hist(self.signal_delR, range=[0., 7.], linewidth = .5, bins=15, histtype="step", color='magenta',label='tZq',density = True)
-        plt.hist(self.background_delR, range=[0., 7.], linewidth = .5, bins=15, histtype="step", color='royalblue', label ='DiBoson 4l',density = True)
+        plt.hist(self.background_delR, range=[0., 7.], linewidth = .5, bins=15, histtype="step", color='royalblue', label ='Diboson 3l1v',density = True)
         plt.legend(frameon = False)
         plt.xlim(0,7)
 
@@ -284,7 +300,7 @@ class PlotHisto(object):
         ax.yaxis.set_ticks_position('both')
         ax.tick_params(direction='in',which='minor', length=2)
         plt.hist(self.signal_pT_jf, range=[0., 300.], linewidth = .5, bins=10, histtype="step", color='magenta',label='tZq',density = True)
-        plt.hist(self.background_pT_jf, range=[0., 300.], linewidth = .5, bins=10, histtype="step", color='royalblue', label ='DiBoson 4l',density = True)
+        plt.hist(self.background_pT_jf, range=[0., 300.], linewidth = .5, bins=10, histtype="step", color='royalblue', label ='Diboson 3l1v',density = True)
         plt.legend(frameon = False)
         plt.xlim(0,300)
 
@@ -305,7 +321,7 @@ class PlotHisto(object):
         ax.yaxis.set_ticks_position('both')
         ax.tick_params(direction='in',which='minor', length=2)
         plt.hist(self.signal_pT_jr, range=[0., 200.], linewidth = .5, bins=10, histtype="step", color='magenta',label='tZq',density = True)
-        plt.hist(self.background_pT_jr, range=[0., 200.], linewidth = .5, bins=10, histtype="step", color='royalblue', label ='DiBoson 4l',density = True)
+        plt.hist(self.background_pT_jr, range=[0., 200.], linewidth = .5, bins=10, histtype="step", color='royalblue', label ='Diboson 3l1v',density = True)
         plt.legend(frameon = False)
         plt.xlim(0,200)
 
@@ -326,7 +342,7 @@ class PlotHisto(object):
         ax.yaxis.set_ticks_position('both')
         ax.tick_params(direction='in',which='minor', length=2)
         plt.hist(self.signal_eta_jr, range=[0., 5.], linewidth = .5, bins=15, histtype="step", color='magenta',label='tZq',density = True)
-        plt.hist(self.background_eta_jr, range=[0., 5.], linewidth = .5, bins=15, histtype="step", color='royalblue', label ='DiBoson 4l',density = True)
+        plt.hist(self.background_eta_jr, range=[0., 5.], linewidth = .5, bins=15, histtype="step", color='royalblue', label ='Diboson 3l1v',density = True)
         plt.legend(frameon = False)
         plt.xlim(0,5)
 
@@ -347,7 +363,7 @@ class PlotHisto(object):
         ax.yaxis.set_ticks_position('both')
         ax.tick_params(direction='in',which='minor', length=2)
         plt.hist(self.signal_pT_Z, range=[0., 300.], linewidth = .5, bins=10, histtype="step", color='magenta',label='tZq',density = True)
-        plt.hist(self.background_pT_Z, range=[0., 300.], linewidth = .5, bins=10, histtype="step", color='royalblue', label ='DiBoson 4l',density = True)
+        plt.hist(self.background_pT_Z, range=[0., 300.], linewidth = .5, bins=10, histtype="step", color='royalblue', label ='Diboson 3l1v',density = True)
         plt.legend(frameon = False)
         plt.xlim(0,300)
 
@@ -356,7 +372,7 @@ class PlotHisto(object):
         plt.gcf().savefig(mysavedata + 'pT_Z.png')
         plt.gcf().clear() 
 
-'''
+
     def Plot_mT_W(self):
         ax = plt.subplot()
         ax.ticklabel_format(style='sci', axis ='both', scilimits=(-4,4))
@@ -368,8 +384,8 @@ class PlotHisto(object):
         ax.xaxis.set_ticks_position('both')
         ax.yaxis.set_ticks_position('both')
         ax.tick_params(direction='in',which='minor', length=2)
-        plt.hist(self.signal_mT_W, range=[0., 240.], linewidth = .5, bins=8, histtype="step", color='magenta',label='tZq')
-        plt.hist(self.background_mT_W, range=[0., 240.], linewidth = .5, bins=8, histtype="step", color='royalblue', label ='DiBoson 4l')
+        plt.hist(self.signal_mT_W, range=[0., 240.], linewidth = .5, bins=8, histtype="step", color='magenta',label='tZq',density = True)
+        plt.hist(self.background_mT_W, range=[0., 240.], linewidth = .5, bins=8, histtype="step", color='royalblue', label ='Diboson 3l1v',density = True)
         plt.legend(frameon = False)
         plt.xlim(0,240)
 
@@ -390,8 +406,9 @@ class PlotHisto(object):
         ax.xaxis.set_ticks_position('both')
         ax.yaxis.set_ticks_position('both')
         ax.tick_params(direction='in',which='minor', length=2)
-        plt.hist(self.signal_mT_W, range=[0., 600.], linewidth = .5, bins=30, histtype="step", color='magenta',label='tZq')
-        plt.hist(self.background_mT_W, range=[0., 600.], linewidth = .5, bins=30, histtype="step", color='royalblue', label ='DiBoson 4l')
+        plt.hist(self.signal_m_top, range=[0., 600.], linewidth = .75, bins=30, histtype="step", color='magenta',label='tZq',density = True)
+        plt.hist(self.background_m_top, range=[0., 600.], linewidth = .75, bins=30, histtype="step", color='royalblue', label ='Diboson 3l1v',density = True)
+        plt.hist(self.background_m_top_ttbar, range=[0., 600.], linewidth = .75, bins=30, histtype="step", color='red', label =r'$t\bar{t}$',density = True)
         plt.legend(frameon = False)
         plt.xlim(0,600)
 
@@ -399,7 +416,6 @@ class PlotHisto(object):
         plt.ylabel('Events',va = 'top',y=0.95,labelpad=10)
         plt.gcf().savefig(mysavedata + 'm_top.png')
         plt.gcf().clear()
-'''
 
 m = PlotHisto()
 m.Plot_m_b_jf()
@@ -415,8 +431,8 @@ m.Plot_pT_jf()
 m.Plot_pT_jr()
 m.Plot_eta_jr()
 m.Plot_pT_Z()
-#m.Plot_mT_W()
-#m.Plot_m_top()
+m.Plot_mT_W()
+m.Plot_m_top()
 
 
 

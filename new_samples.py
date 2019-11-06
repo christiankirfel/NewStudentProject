@@ -26,6 +26,7 @@ import numpy as np
 #Loading packages needed for plottting
 import matplotlib.pyplot as plt
 from matplotlib import rc
+from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,AutoMinorLocator)
 #Defining colours for the plots
 #The colours were chosen using the xkcd guice
 #color_tW = '#66FFFF'
@@ -37,6 +38,10 @@ color_tW2 = '#02590f'
 color_tt2 = '#FF6600'
 
 ax = plt.subplot(111)
+my_path_to_data = '/cephfs/user/s6pinogg/PietBachelor/tZq_plus_backgrounds/'
+data_background_diboson = my_path_to_data + 'diboson/'
+data_background_ttV = my_path_to_data + 'ttV/'
+data_background_ttbar = my_path_to_data + 'ttbar/'
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -50,7 +55,12 @@ if not os.path.exists(output_path):
 if not os.path.exists(array_path):
     os.makedirs(array_path)
 
+mysavedata = '/cephfs/user/s6pinogg/PietBachelor/Histo_Data/'
 
+
+
+if not os.path.exists(mysavedata):
+    os.makedirs(mysavedata)
 
 
 
@@ -84,30 +94,148 @@ class neuralNetworkEnvironment(object):
         ###
 
 
+        ###Signal tZq input files 2015-2018
+        self.input_path_sample_2018 = '/cephfs/user/s6pinogg/PietBachelor/tZq_plus_backgrounds/tZq/mc16e.412063.aMCPy8EG_tllq_nf4.FS.nominal.root'
+        self.input_path_sample_2017 = '/cephfs/user/s6pinogg/PietBachelor/tZq_plus_backgrounds/tZq/mc16d.412063.aMCPy8EG_tllq_nf4.FS.nominal.root'
+        self.input_path_sample_15_16 = '/cephfs/user/s6pinogg/PietBachelor/tZq_plus_backgrounds/tZq/mc16a.412063.aMCPy8EG_tllq_nf4.FS.nominal.root'
+        ### Background diboson input files
+        ## 2018
+        self.input_path_background_diboson_2018_ZqqZvv = data_background_diboson + 'mc16e.363355.Sh221_ZqqZvv.FS.nominal.root'
+        self.input_path_background_diboson_2018_ZqqZll = data_background_diboson + 'mc16e.363356.Sh221_ZqqZll.FS.nominal.root'
+        self.input_path_background_diboson_2018_WqqZvv = data_background_diboson + 'mc16e.363357.Sh221_WqqZvv.FS.nominal.root'
+        self.input_path_background_diboson_2018_WqqZll = data_background_diboson + 'mc16e.363358.Sh221_WqqZll.FS.nominal.root'
+        self.input_path_background_diboson_2018_WpqqWmlv = data_background_diboson + 'mc16e.363359.Sh221_WpqqWmlv.FS.nominal.root'
+        self.input_path_background_diboson_2018_WplvWmqq = data_background_diboson + 'mc16e.363360.Sh221_WplvWmqq.FS.nominal.root'
+        self.input_path_background_diboson_2018_WlvZqq = data_background_diboson + 'mc16e.363489.Sh221_WlvZqq.FS.nominal.root'
+        self.input_path_background_diboson_2018_llll = data_background_diboson + 'mc16e.364250.Sh222_llll.FS.nominal.root'
+        self.input_path_background_diboson_2018_lllv = data_background_diboson + 'mc16e.364253.Sh222_lllv.FS.nominal.root'
+        self.input_path_background_diboson_2018_llvv = data_background_diboson + 'mc16e.364254.Sh222_llvv.FS.nominal.root'        
+        self.input_path_background_diboson_2018_lvvv = data_background_diboson + 'mc16e.364255.Sh222_lvvv.FS.nominal.root'        
+        self.input_path_background_diboson_2018_llll_lowMll = data_background_diboson + 'mc16e.364288.Sh222_llll_lowMllPtComp.FS.nominal.root'        
+        self.input_path_background_diboson_2018_lllv_lowMll = data_background_diboson + 'mc16e.364289.Sh222_lllv_lowMllPtComp.FS.nominal.root'        
+        self.input_path_background_diboson_2018_llvv_lowMll = data_background_diboson + 'mc16e.364290.Sh222_llvv_lowMllPtComp.FS.nominal.root'        
+        ## 2017
+        self.input_path_background_diboson_2017_ZqqZll = data_background_diboson + 'mc16d.363356.Sh221_ZqqZll.FS.nominal.root'
+        self.input_path_background_diboson_2017_WqqZvv = data_background_diboson + 'mc16d.363357.Sh221_WqqZvv.FS.nominal.root'
+        self.input_path_background_diboson_2017_WqqZll = data_background_diboson + 'mc16d.363358.Sh221_WqqZll.FS.nominal.root'
+        self.input_path_background_diboson_2017_WpqqWmlv = data_background_diboson + 'mc16d.363359.Sh221_WpqqWmlv.FS.nominal.root'
+        self.input_path_background_diboson_2017_WplvWmqq = data_background_diboson + 'mc16d.363360.Sh221_WplvWmqq.FS.nominal.root'
+        self.input_path_background_diboson_2017_WlvZqq = data_background_diboson + 'mc16d.363489.Sh221_WlvZqq.FS.nominal.root'
+        self.input_path_background_diboson_2017_llll = data_background_diboson + 'mc16d.364250.Sh222_llll.FS.nominal.root'
+        self.input_path_background_diboson_2017_lllv = data_background_diboson + 'mc16d.364253.Sh222_lllv.FS.nominal.root'
+        self.input_path_background_diboson_2017_llvv = data_background_diboson + 'mc16d.364254.Sh222_llvv.FS.nominal.root'        
+        self.input_path_background_diboson_2017_lvvv = data_background_diboson + 'mc16d.364255.Sh222_lvvv.FS.nominal.root'        
+        self.input_path_background_diboson_2017_llll_lowMll = data_background_diboson + 'mc16d.364288.Sh222_llll_lowMllPtComp.FS.nominal.root'        
+        self.input_path_background_diboson_2017_lllv_lowMll = data_background_diboson + 'mc16d.364289.Sh222_lllv_lowMllPtComp.FS.nominal.root'        
+        self.input_path_background_diboson_2017_llvv_lowMll = data_background_diboson + 'mc16d.364290.Sh222_llvv_lowMllPtComp.FS.nominal.root' 
 
-        self.input_path_sample = '/cephfs/user/s6taholm/tHq/run/testPiet/test_tZe.root'
-        self.input_path_background = '/cephfs/user/s6taholm/tHq/run/testVar_fix/diboson_e.root'
-        ##
+        ## 2015-2016
+        self.input_path_background_diboson_2016_ZqqZvv = data_background_diboson + 'mc16a.363355.Sh221_ZqqZvv.FS.nominal.root'
+        self.input_path_background_diboson_2016_ZqqZll = data_background_diboson + 'mc16a.363356.Sh221_ZqqZll.FS.nominal.root'
+        self.input_path_background_diboson_2016_WqqZvv = data_background_diboson + 'mc16a.363357.Sh221_WqqZvv.FS.nominal.root'
+        self.input_path_background_diboson_2016_WqqZll = data_background_diboson + 'mc16a.363358.Sh221_WqqZll.FS.nominal.root'
+        self.input_path_background_diboson_2016_WpqqWmlv = data_background_diboson + 'mc16a.363359.Sh221_WpqqWmlv.FS.nominal.root'
+        self.input_path_background_diboson_2016_WplvWmqq = data_background_diboson + 'mc16a.363360.Sh221_WplvWmqq.FS.nominal.root'
+        self.input_path_background_diboson_2016_WlvZqq = data_background_diboson + 'mc16a.363489.Sh221_WlvZqq.FS.nominal.root'
+        self.input_path_background_diboson_2016_llll = data_background_diboson + 'mc16a.364250.Sh222_llll.FS.nominal.root'
+        self.input_path_background_diboson_2016_lllv = data_background_diboson + 'mc16a.364253.Sh222_lllv.FS.nominal.root'
+        self.input_path_background_diboson_2016_llvv = data_background_diboson + 'mc16a.364254.Sh222_llvv.FS.nominal.root'        
+        self.input_path_background_diboson_2016_lvvv = data_background_diboson + 'mc16a.364255.Sh222_lvvv.FS.nominal.root'        
+        self.input_path_background_diboson_2016_llll_lowMll = data_background_diboson + 'mc16a.364288.Sh222_llll_lowMllPtComp.FS.nominal.root'        
+        self.input_path_background_diboson_2016_lllv_lowMll = data_background_diboson + 'mc16a.364289.Sh222_lllv_lowMllPtComp.FS.nominal.root'        
+        self.input_path_background_diboson_2016_llvv_lowMll = data_background_diboson + 'mc16a.364290.Sh222_llvv_lowMllPtComp.FS.nominal.root' 
 
+        ### Background ttbarZ -> ee
+        ## 2018
+        self.input_path_background_ttZ_2018 = data_background_ttV + 'mc16e.410218.aMCPy8EG_ttee.FS.nominal.root'
+        ## 2017 
+        self.input_path_background_ttZ_2017 = data_background_ttV + 'mc16d.410218.aMCPy8EG_ttee.FS.nominal.root'
+        ## 2015-2016
+        self.input_path_background_ttZ_2016 = data_background_ttV + 'mc16a.410218.aMCPy8EG_ttee.FS.nominal.root'
+       
+        ### Background ttbar 
+        ## 2018
+        self.input_path_background_ttbar_l_2018 = data_background_ttbar + 'mc16e.410470.PhPy8EG_ttbar_hdamp258p75_l.FS.nominal.root'
+        self.input_path_background_ttbar_0l_2018 = data_background_ttbar + 'mc16e.410471.PhPy8EG_ttbar_hdamp258p75_0l.FS.nominal.root'
+        self.input_path_background_ttbar_2l_2018 = data_background_ttbar + 'mc16e.410472.PhPy8EG_ttbar_hdamp258p75_2l.FS.nominal.root'
+        ## 2017
+        self.input_path_background_ttbar_l_2017 = data_background_ttbar + 'mc16d.410470.PhPy8EG_ttbar_hdamp258p75_l.FS.nominal.root'
+        self.input_path_background_ttbar_0l_2017 = data_background_ttbar + 'mc16d.410471.PhPy8EG_ttbar_hdamp258p75_0l.FS.nominal.root'
+        self.input_path_background_ttbar_2l_2017 = data_background_ttbar + 'mc16d.410472.PhPy8EG_ttbar_hdamp258p75_2l.FS.nominal.root'        
+        ## 2015-2016
+        self.input_path_background_ttbar_l_2016 = data_background_ttbar + 'mc16a.410470.PhPy8EG_ttbar_hdamp258p75_l.FS.nominal.root'
+        self.input_path_background_ttbar_0l_2016 = data_background_ttbar + 'mc16a.410471.PhPy8EG_ttbar_hdamp258p75_0l.FS.nominal.root'
+        self.input_path_background_ttbar_2l_2016 = data_background_ttbar + 'mc16a.410472.PhPy8EG_ttbar_hdamp258p75_2l.FS.nominal.root'
 
-        #self.input_path_sample = "/cephfs/user/s6pinogg/PietBachelor/signal_tZq/tZq/mc16a.412063.aMCPy8EG_tllq_nf4.FS.nominal.root"
-        #self.input_path_background = "/cephfs/user/s6pinogg/PietBachelor/background_NN/nBosons/mc16a.364250.Sh222_llll.FS.nominal.root"
-        #self.input_path_background_2 = "/cephfs/user/s6pinogg/PietBachelor/background_NN/nBosons/mc16d.364250.Sh222_llll.FS.nominal.root"
-        #self.input_path_sample_2 = "/cephfs/user/s6pinogg/PietBachelor/signal_tZq/tZq/mc16d.412063.aMCPy8EG_tllq_nf4.FS.nominal.root"
-        #self.input_path_background_2 = "/cephfs/user/s6pinogg/PietBachelor/background_NN/nBosons/mc16a.364250.Sh222_llll.FS.nominal.root" 
-        #self.input_path_background_3 = "/cephfs/user/s6pinogg/PietBachelor/18-10_tZVar/ttV/ttbar/mc16a.410470.PhPy8EG_ttbar_hdamp258p75_l.FS.nominal.root"
-        #self.input_path_background_4 = "/cephfs/user/s6pinogg/PietBachelor/18-10_tZVar/ttV/mc16e.410157.aMCPy8EG_ttZqq.FS.nominal.root"
 
         self.signal_sample = "tHqLoop_nominal;1"
         self.background_sample = "tHqLoop_nominal;1"
-        self.signal_tree = ur.open(self.input_path_sample)[self.signal_sample]
-        #self.signal_tree_2 = ur.open(self.input_path_sample_2)[self.signal_sample]
-        self.background_tree = ur.open(self.input_path_background)[self.background_sample]
-        #self.background_tree_2 = ur.open(self.input_path_background_2)[self.background_sample]
-        #self.background_tree_2 = ur.open(self.input_path_background_2)[self.background_sample] ## NEW 
-        #self.background_tree_3 = ur.open(self.input_path_background_3)[self.background_sample] ## NEW 
-        #self.background_tree_4 = ur.open(self.input_path_background_4)[self.background_sample] ## ttZ qq 
-
+        ## Signal Tree tZq 2015-2018
+        self.signal_tree_2018 = ur.open(self.input_path_sample_2018)[self.signal_sample]
+        self.signal_tree_2017 = ur.open(self.input_path_sample_2017)[self.signal_sample]   
+        self.signal_tree_15_16 = ur.open(self.input_path_sample_15_16)[self.signal_sample]     
+        ## Background Tree diboson 2018
+        self.background_tree_diboson_2018_ZqqZvv = ur.open(self.input_path_background_diboson_2018_ZqqZvv)[self.background_sample]
+        self.background_tree_diboson_2018_ZqqZll = ur.open(self.input_path_background_diboson_2018_ZqqZll)[self.background_sample]
+        self.background_tree_diboson_2018_WqqZvv = ur.open(self.input_path_background_diboson_2018_WqqZvv)[self.background_sample]
+        self.background_tree_diboson_2018_WqqZll = ur.open(self.input_path_background_diboson_2018_WqqZll)[self.background_sample]
+        self.background_tree_diboson_2018_WpqqWmlv = ur.open(self.input_path_background_diboson_2018_WpqqWmlv)[self.background_sample]
+        self.background_tree_diboson_2018_WplvWmqq = ur.open(self.input_path_background_diboson_2018_WplvWmqq)[self.background_sample]
+        self.background_tree_diboson_2018_WlvZqq = ur.open(self.input_path_background_diboson_2018_WlvZqq)[self.background_sample]
+        self.background_tree_diboson_2018_llll = ur.open(self.input_path_background_diboson_2018_llll)[self.background_sample]
+        self.background_tree_diboson_2018_lllv = ur.open(self.input_path_background_diboson_2018_lllv)[self.background_sample]
+        self.background_tree_diboson_2018_llvv = ur.open(self.input_path_background_diboson_2018_llvv)[self.background_sample]
+        self.background_tree_diboson_2018_lvvv = ur.open(self.input_path_background_diboson_2018_lvvv)[self.background_sample]
+        self.background_tree_diboson_2018_llll_lowMll = ur.open(self.input_path_background_diboson_2018_llll_lowMll)[self.background_sample]
+        self.background_tree_diboson_2018_lllv_lowMll = ur.open(self.input_path_background_diboson_2018_lllv_lowMll)[self.background_sample]
+        self.background_tree_diboson_2018_llvv_lowMll = ur.open(self.input_path_background_diboson_2018_llvv_lowMll)[self.background_sample]
+        ## Background Tree diboson 2017
+        self.background_tree_diboson_2017_ZqqZll = ur.open(self.input_path_background_diboson_2017_ZqqZll)[self.background_sample]
+        self.background_tree_diboson_2017_WqqZvv = ur.open(self.input_path_background_diboson_2017_WqqZvv)[self.background_sample]
+        self.background_tree_diboson_2017_WqqZll = ur.open(self.input_path_background_diboson_2017_WqqZll)[self.background_sample]
+        self.background_tree_diboson_2017_WpqqWmlv = ur.open(self.input_path_background_diboson_2017_WpqqWmlv)[self.background_sample]
+        self.background_tree_diboson_2017_WplvWmqq = ur.open(self.input_path_background_diboson_2017_WplvWmqq)[self.background_sample]
+        self.background_tree_diboson_2017_WlvZqq = ur.open(self.input_path_background_diboson_2017_WlvZqq)[self.background_sample]
+        self.background_tree_diboson_2017_llll = ur.open(self.input_path_background_diboson_2017_llll)[self.background_sample]
+        self.background_tree_diboson_2017_lllv = ur.open(self.input_path_background_diboson_2017_lllv)[self.background_sample]
+        self.background_tree_diboson_2017_llvv = ur.open(self.input_path_background_diboson_2017_llvv)[self.background_sample]
+        self.background_tree_diboson_2017_lvvv = ur.open(self.input_path_background_diboson_2017_lvvv)[self.background_sample]
+        self.background_tree_diboson_2017_llll_lowMll = ur.open(self.input_path_background_diboson_2017_llll_lowMll)[self.background_sample]
+        self.background_tree_diboson_2017_lllv_lowMll = ur.open(self.input_path_background_diboson_2017_lllv_lowMll)[self.background_sample]
+        self.background_tree_diboson_2017_llvv_lowMll = ur.open(self.input_path_background_diboson_2017_llvv_lowMll)[self.background_sample]
+        ## Background Tree diboson 2015-2016
+        self.background_tree_diboson_2016_ZqqZvv = ur.open(self.input_path_background_diboson_2016_ZqqZvv)[self.background_sample]
+        self.background_tree_diboson_2016_ZqqZll = ur.open(self.input_path_background_diboson_2016_ZqqZll)[self.background_sample]
+        self.background_tree_diboson_2016_WqqZvv = ur.open(self.input_path_background_diboson_2016_WqqZvv)[self.background_sample]
+        self.background_tree_diboson_2016_WqqZll = ur.open(self.input_path_background_diboson_2016_WqqZll)[self.background_sample]
+        self.background_tree_diboson_2016_WpqqWmlv = ur.open(self.input_path_background_diboson_2016_WpqqWmlv)[self.background_sample]
+        self.background_tree_diboson_2016_WplvWmqq = ur.open(self.input_path_background_diboson_2016_WplvWmqq)[self.background_sample]
+        self.background_tree_diboson_2016_WlvZqq = ur.open(self.input_path_background_diboson_2016_WlvZqq)[self.background_sample]
+        self.background_tree_diboson_2016_llll = ur.open(self.input_path_background_diboson_2016_llll)[self.background_sample]
+        self.background_tree_diboson_2016_lllv = ur.open(self.input_path_background_diboson_2016_lllv)[self.background_sample]
+        self.background_tree_diboson_2016_llvv = ur.open(self.input_path_background_diboson_2016_llvv)[self.background_sample]
+        self.background_tree_diboson_2016_lvvv = ur.open(self.input_path_background_diboson_2016_lvvv)[self.background_sample]
+        self.background_tree_diboson_2016_llll_lowMll = ur.open(self.input_path_background_diboson_2016_llll_lowMll)[self.background_sample]
+        self.background_tree_diboson_2016_lllv_lowMll = ur.open(self.input_path_background_diboson_2016_lllv_lowMll)[self.background_sample]
+        self.background_tree_diboson_2016_llvv_lowMll = ur.open(self.input_path_background_diboson_2016_llvv_lowMll)[self.background_sample]
+        ## Background Tree ttZ 2018
+        self.background_tree_ttZ_2018 = ur.open(self.input_path_background_ttZ_2018)[self.background_sample]
+        ## Background Tree ttZ 2017
+        self.background_tree_ttZ_2017 = ur.open(self.input_path_background_ttZ_2017)[self.background_sample]
+        ## Background Tree ttZ 2015-2016
+        self.background_tree_ttZ_2016 = ur.open(self.input_path_background_ttZ_2016)[self.background_sample]
+        ## Background Tree ttbar 2018
+        self.background_tree_ttbar_l_2018 = ur.open(self.input_path_background_ttbar_l_2018)[self.background_sample]
+        self.background_tree_ttbar_0l_2018 = ur.open(self.input_path_background_ttbar_0l_2018)[self.background_sample]
+        self.background_tree_ttbar_2l_2018 = ur.open(self.input_path_background_ttbar_2l_2018)[self.background_sample]
+        ## Background Tree ttbar 2017
+        self.background_tree_ttbar_l_2017 = ur.open(self.input_path_background_ttbar_l_2017)[self.background_sample]
+        self.background_tree_ttbar_0l_2017 = ur.open(self.input_path_background_ttbar_0l_2017)[self.background_sample]
+        self.background_tree_ttbar_2l_2017 = ur.open(self.input_path_background_ttbar_2l_2017)[self.background_sample]
+        ## Background Tree ttbar 2015-2016
+        self.background_tree_ttbar_l_2016 = ur.open(self.input_path_background_ttbar_l_2016)[self.background_sample]
+        self.background_tree_ttbar_0l_2016 = ur.open(self.input_path_background_ttbar_0l_2016)[self.background_sample]
+        self.background_tree_ttbar_2l_2016 = ur.open(self.input_path_background_ttbar_2l_2016)[self.background_sample]
 
         self.sample_training = None
         self.sample_validation = None
@@ -126,11 +254,11 @@ class neuralNetworkEnvironment(object):
         #All information for the length of the training. Beware that epochs might only come into the pretraining
         #Iterations are used for the adversarial part of the training
         #If you want to make the training longer you want to change these numbers, there is no early stopping atm, feel free to add it
-        self.discriminator_epochs = 50
+        self.discriminator_epochs = 30
         self.batchSize = 512
         #Setup of the networks, nodes and layers
-        self.discriminator_layers = 10
-        self.discriminator_nodes = 256
+        self.discriminator_layers = 3
+        self.discriminator_nodes = 128
         #Setup of the networks, loss and optimisation
         ## just an integer
         self.queue = 3
@@ -140,9 +268,9 @@ class neuralNetworkEnvironment(object):
         self.discriminator_momentum = 0.9
         self.discriminator_optimizer = SGD(lr = self.discriminator_lr, momentum = self.discriminator_momentum)
         self.discriminator_optimizer_adam = Adam(lr = self.discriminator_lr,beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay = 1e-6)
-        self.discriminator_dropout = 0.4
-        self.discriminator_loss = binary_crossentropy
-        self.validation_fraction = 0.15
+        self.discriminator_dropout = 0.3
+        self.discriminator_loss = 'binary_crossentropy'
+        self.validation_fraction = 0.1
 
         self.output_job = output_path + 'epochs_%i/lr_%.3f/momentum_%.3f/' % (self.discriminator_epochs,self.discriminator_lr,self.discriminator_momentum)
         self.output_lr = output_path + 'epochs_%i/' % (self.discriminator_epochs)
@@ -168,19 +296,210 @@ class neuralNetworkEnvironment(object):
         #Signal and background are needed for the classification task, signal and systematic for the adversarial part
         #In this first step the events are retrieved from the tree, using the chosen set of variables
         #The numpy conversion is redundant
-        #print(self.background_tree.pandas.df("m_top").to_numpy())
-        #print(self.signal_tree.pandas.df("m_top").to_numpy())
 
-        self.events_signal = self.signal_tree.pandas.df(self.variables).to_numpy()
-        #self.events_background = np.concatenate([self.background_tree.pandas.df(self.variables).to_numpy(),self.background_tree_2.pandas.df(self.variables).to_numpy(),self.background_tree_3.pandas.df(self.variables).to_numpy()])
-        self.events_background = self.background_tree.pandas.df(self.variables).to_numpy()
+        ### Numpy conversion of Signal tZq 2015-2018
+        self.events_signal_2018 = self.signal_tree_2018.pandas.df(self.variables).to_numpy()
+        self.events_signal_2017 = self.signal_tree_2017.pandas.df(self.variables).to_numpy()
+        self.events_signal_15_16 = self.signal_tree_15_16.pandas.df(self.variables).to_numpy()
+
+        self.events_signal = np.concatenate([self.events_signal_2018,self.events_signal_2017,self.events_signal_15_16])
+
+
+        ### Numpy conversion of diboson background 
+        ## 2018
+        self.events_background_diboson_2018_ZqqZvv = self.background_tree_diboson_2018_ZqqZvv.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2018_ZqqZll = self.background_tree_diboson_2018_ZqqZll.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2018_WqqZvv = self.background_tree_diboson_2018_WqqZvv.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2018_WqqZll = self.background_tree_diboson_2018_WqqZll.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2018_WpqqWmlv = self.background_tree_diboson_2018_WpqqWmlv.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2018_WplvWmqq = self.background_tree_diboson_2018_WplvWmqq.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2018_WlvZqq = self.background_tree_diboson_2018_WlvZqq.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2018_llll = self.background_tree_diboson_2018_llll.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2018_lllv = self.background_tree_diboson_2018_lllv.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2018_llvv = self.background_tree_diboson_2018_llvv.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2018_lvvv = self.background_tree_diboson_2018_lvvv.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2018_llll_lowMll = self.background_tree_diboson_2018_llll_lowMll.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2018_lllv_lowMll = self.background_tree_diboson_2018_lllv_lowMll.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2018_llvv_lowMll = self.background_tree_diboson_2018_llvv_lowMll.pandas.df(self.variables).to_numpy()
+    
+        self.events_background_diboson_2018 = np.concatenate([self.events_background_diboson_2018_ZqqZvv,self.events_background_diboson_2018_ZqqZll,self.events_background_diboson_2018_WqqZvv,self.events_background_diboson_2018_WqqZll,self.events_background_diboson_2018_WpqqWmlv,self.events_background_diboson_2018_WplvWmqq,self.events_background_diboson_2018_WlvZqq,self.events_background_diboson_2018_llll,self.events_background_diboson_2018_lllv,self.events_background_diboson_2018_llvv,self.events_background_diboson_2018_lvvv,self.events_background_diboson_2018_llll_lowMll,self.events_background_diboson_2018_lllv_lowMll,self.events_background_diboson_2018_llvv_lowMll])
+        ## 2017
+        self.events_background_diboson_2017_ZqqZll = self.background_tree_diboson_2017_ZqqZll.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2017_WqqZvv = self.background_tree_diboson_2017_WqqZvv.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2017_WqqZll = self.background_tree_diboson_2017_WqqZll.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2017_WpqqWmlv = self.background_tree_diboson_2017_WpqqWmlv.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2017_WplvWmqq = self.background_tree_diboson_2017_WplvWmqq.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2017_WlvZqq = self.background_tree_diboson_2017_WlvZqq.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2017_llll = self.background_tree_diboson_2017_llll.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2017_lllv = self.background_tree_diboson_2017_lllv.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2017_llvv = self.background_tree_diboson_2017_llvv.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2017_lvvv = self.background_tree_diboson_2017_lvvv.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2017_llll_lowMll = self.background_tree_diboson_2017_llll_lowMll.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2017_lllv_lowMll = self.background_tree_diboson_2017_lllv_lowMll.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2017_llvv_lowMll = self.background_tree_diboson_2017_llvv_lowMll.pandas.df(self.variables).to_numpy()
+
+        self.events_background_diboson_2017 = np.concatenate([self.events_background_diboson_2017_ZqqZll,self.events_background_diboson_2017_WqqZvv,self.events_background_diboson_2017_WqqZll,self.events_background_diboson_2017_WpqqWmlv,self.events_background_diboson_2017_WplvWmqq,self.events_background_diboson_2017_WlvZqq,self.events_background_diboson_2017_llll,self.events_background_diboson_2017_lllv,self.events_background_diboson_2017_llvv,self.events_background_diboson_2017_lvvv,self.events_background_diboson_2017_llll_lowMll,self.events_background_diboson_2017_lllv_lowMll,self.events_background_diboson_2017_llvv_lowMll])
+
+        ##2015-2016
+        self.events_background_diboson_2016_ZqqZvv = self.background_tree_diboson_2016_ZqqZvv.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2016_ZqqZll = self.background_tree_diboson_2016_ZqqZll.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2016_WqqZvv = self.background_tree_diboson_2016_WqqZvv.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2016_WqqZll = self.background_tree_diboson_2016_WqqZll.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2016_WpqqWmlv = self.background_tree_diboson_2016_WpqqWmlv.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2016_WplvWmqq = self.background_tree_diboson_2016_WplvWmqq.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2016_WlvZqq = self.background_tree_diboson_2016_WlvZqq.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2016_llll = self.background_tree_diboson_2016_llll.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2016_lllv = self.background_tree_diboson_2016_lllv.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2016_llvv = self.background_tree_diboson_2016_llvv.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2016_lvvv = self.background_tree_diboson_2016_lvvv.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2016_llll_lowMll = self.background_tree_diboson_2016_llll_lowMll.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2016_lllv_lowMll = self.background_tree_diboson_2016_lllv_lowMll.pandas.df(self.variables).to_numpy()
+        self.events_background_diboson_2016_llvv_lowMll = self.background_tree_diboson_2016_llvv_lowMll.pandas.df(self.variables).to_numpy()        
+
+        self.events_background_diboson_2016 = np.concatenate([self.events_background_diboson_2016_ZqqZvv,self.events_background_diboson_2016_ZqqZll,self.events_background_diboson_2016_WqqZvv,self.events_background_diboson_2016_WqqZll,self.events_background_diboson_2016_WpqqWmlv,self.events_background_diboson_2016_WplvWmqq,self.events_background_diboson_2016_WlvZqq,self.events_background_diboson_2016_llll,self.events_background_diboson_2016_lllv,self.events_background_diboson_2016_llvv,self.events_background_diboson_2016_lvvv,self.events_background_diboson_2016_llll_lowMll,self.events_background_diboson_2016_lllv_lowMll,self.events_background_diboson_2016_llvv_lowMll])
+
+
+        ## Background Diboson put together 
+        self.events_background_diboson = np.concatenate([self.events_background_diboson_2018,self.events_background_diboson_2017,self.events_background_diboson_2016])
+        print(np.shape(self.events_background_diboson))
+
+        ### Numpy conversion of ttZ background 
+        ## 2018
+        self.events_background_ttZ_2018 = self.background_tree_ttZ_2018.pandas.df(self.variables).to_numpy()
+        ## 2017
+        self.events_background_ttZ_2017 = self.background_tree_ttZ_2017.pandas.df(self.variables).to_numpy()
+        ## 2015-2016
+        self.events_background_ttZ_2016 = self.background_tree_ttZ_2016.pandas.df(self.variables).to_numpy()
+        
+        ## ttZ background put together 
+        self.events_background_ttZ = np.concatenate([self.events_background_ttZ_2018,self.events_background_ttZ_2017,self.events_background_ttZ_2016])
+
+        ### Numpy conversion of ttbar background
+        ## 2018
+        self.events_background_ttbar_l_2018 = self.background_tree_ttbar_l_2018.pandas.df(self.variables).to_numpy()
+        self.events_background_ttbar_0l_2018 = self.background_tree_ttbar_0l_2018.pandas.df(self.variables).to_numpy()
+        self.events_background_ttbar_2l_2018 = self.background_tree_ttbar_2l_2018.pandas.df(self.variables).to_numpy()
+        self.events_background_ttbar_2018 = np.concatenate([self.events_background_ttbar_l_2018,self.events_background_ttbar_0l_2018,self.events_background_ttbar_2l_2018])
+        ## 2017
+        self.events_background_ttbar_l_2017 = self.background_tree_ttbar_l_2017.pandas.df(self.variables).to_numpy()
+        self.events_background_ttbar_0l_2017 = self.background_tree_ttbar_0l_2017.pandas.df(self.variables).to_numpy()
+        self.events_background_ttbar_2l_2017 = self.background_tree_ttbar_2l_2017.pandas.df(self.variables).to_numpy()
+        self.events_background_ttbar_2017 = np.concatenate([self.events_background_ttbar_l_2017,self.events_background_ttbar_0l_2017,self.events_background_ttbar_2l_2017])
+        ## 2016
+        self.events_background_ttbar_l_2016 = self.background_tree_ttbar_l_2016.pandas.df(self.variables).to_numpy()
+        self.events_background_ttbar_0l_2016 = self.background_tree_ttbar_0l_2016.pandas.df(self.variables).to_numpy()
+        self.events_background_ttbar_2l_2016 = self.background_tree_ttbar_2l_2016.pandas.df(self.variables).to_numpy()
+        self.events_background_ttbar_2016 = np.concatenate([self.events_background_ttbar_l_2016,self.events_background_ttbar_0l_2016,self.events_background_ttbar_2l_2016])
+        ## Background ttbar put together 
+        self.events_background_ttbar = np.concatenate([self.events_background_ttbar_2018,self.events_background_ttbar_2017,self.events_background_ttbar_2016])
+        ##All backgrounds put together (Care for same order in weights)
+        self.events_background = np.concatenate([self.events_background_diboson,self.events_background_ttZ,self.events_background_ttbar])
+
         #Setting up the weights. The weights for each tree are stored in 'weight_nominal'
-        self.weight_signal = np.absolute(self.signal_tree.pandas.df('weight_nominal').to_numpy())
-        self.weight_background = np.absolute(self.background_tree.pandas.df('weight_nominal').to_numpy())
-        #self.weight_background = np.absolute(np.concatenate([self.background_tree.pandas.df('weight_nominal').to_numpy(),self.background_tree_2.pandas.df('weight_nominal').to_numpy(),self.background_tree_3.pandas.df('weight_nominal').to_numpy()]))
+        self.weight_signal_2018 = self.signal_tree_2018.pandas.df('weight_nominal').to_numpy()
+        self.weight_signal_2017 = self.signal_tree_2017.pandas.df('weight_nominal').to_numpy()
+        self.weight_signal_15_16 = self.signal_tree_15_16.pandas.df('weight_nominal').to_numpy()
+
+        self.weight_signal = np.concatenate([self.weight_signal_2018,self.weight_signal_2017,self.weight_signal_15_16])
+        print(self.weight_signal.sum()*139)
+        self.weight_signal = np.absolute(self.weight_signal) * 139
+        ### Numpy conversion of diboson weights
+        ## 2018
+        self.weight_background_diboson_2018_ZqqZvv = self.background_tree_diboson_2018_ZqqZvv.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2018_ZqqZll = self.background_tree_diboson_2018_ZqqZll.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2018_WqqZvv = self.background_tree_diboson_2018_WqqZvv.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2018_WqqZll = self.background_tree_diboson_2018_WqqZll.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2018_WpqqWmlv = self.background_tree_diboson_2018_WpqqWmlv.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2018_WplvWmqq = self.background_tree_diboson_2018_WplvWmqq.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2018_WlvZqq = self.background_tree_diboson_2018_WlvZqq.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2018_llll = self.background_tree_diboson_2018_llll.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2018_lllv = self.background_tree_diboson_2018_lllv.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2018_llvv = self.background_tree_diboson_2018_llvv.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2018_lvvv = self.background_tree_diboson_2018_lvvv.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2018_llll_lowMll = self.background_tree_diboson_2018_llll_lowMll.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2018_lllv_lowMll = self.background_tree_diboson_2018_lllv_lowMll.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2018_llvv_lowMll = self.background_tree_diboson_2018_llvv_lowMll.pandas.df('weight_nominal').to_numpy()
+
+        self.weight_background_diboson_2018 = np.concatenate([self.weight_background_diboson_2018_ZqqZvv,self.weight_background_diboson_2018_ZqqZll,self.weight_background_diboson_2018_WqqZvv,self.weight_background_diboson_2018_WqqZll,self.weight_background_diboson_2018_WpqqWmlv,self.weight_background_diboson_2018_WplvWmqq,self.weight_background_diboson_2018_WlvZqq,self.weight_background_diboson_2018_llll,self.weight_background_diboson_2018_lllv,self.weight_background_diboson_2018_llvv,self.weight_background_diboson_2018_lvvv,self.weight_background_diboson_2018_llll_lowMll,self.weight_background_diboson_2018_lllv_lowMll,self.weight_background_diboson_2018_llvv_lowMll])
+        ## 2017 
+        self.weight_background_diboson_2017_ZqqZll = self.background_tree_diboson_2017_ZqqZll.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2017_WqqZvv = self.background_tree_diboson_2017_WqqZvv.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2017_WqqZll = self.background_tree_diboson_2017_WqqZll.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2017_WpqqWmlv = self.background_tree_diboson_2017_WpqqWmlv.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2017_WplvWmqq = self.background_tree_diboson_2017_WplvWmqq.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2017_WlvZqq = self.background_tree_diboson_2017_WlvZqq.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2017_llll = self.background_tree_diboson_2017_llll.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2017_lllv = self.background_tree_diboson_2017_lllv.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2017_llvv = self.background_tree_diboson_2017_llvv.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2017_lvvv = self.background_tree_diboson_2017_lvvv.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2017_llll_lowMll = self.background_tree_diboson_2017_llll_lowMll.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2017_lllv_lowMll = self.background_tree_diboson_2017_lllv_lowMll.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2017_llvv_lowMll = self.background_tree_diboson_2017_llvv_lowMll.pandas.df('weight_nominal').to_numpy()
+
+        self.weight_background_diboson_2017 = np.concatenate([self.weight_background_diboson_2017_ZqqZll,self.weight_background_diboson_2017_WqqZvv,self.weight_background_diboson_2017_WqqZll,self.weight_background_diboson_2017_WpqqWmlv,self.weight_background_diboson_2017_WplvWmqq,self.weight_background_diboson_2017_WlvZqq,self.weight_background_diboson_2017_llll,self.weight_background_diboson_2017_lllv,self.weight_background_diboson_2017_llvv,self.weight_background_diboson_2017_lvvv,self.weight_background_diboson_2017_llll_lowMll,self.weight_background_diboson_2017_lllv_lowMll,self.weight_background_diboson_2017_llvv_lowMll])
+
+        ## 2016
+        self.weight_background_diboson_2016_ZqqZvv = self.background_tree_diboson_2016_ZqqZvv.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2016_ZqqZll = self.background_tree_diboson_2016_ZqqZll.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2016_WqqZvv = self.background_tree_diboson_2016_WqqZvv.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2016_WqqZll = self.background_tree_diboson_2016_WqqZll.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2016_WpqqWmlv = self.background_tree_diboson_2016_WpqqWmlv.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2016_WplvWmqq = self.background_tree_diboson_2016_WplvWmqq.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2016_WlvZqq = self.background_tree_diboson_2016_WlvZqq.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2016_llll = self.background_tree_diboson_2016_llll.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2016_lllv = self.background_tree_diboson_2016_lllv.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2016_llvv = self.background_tree_diboson_2016_llvv.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2016_lvvv = self.background_tree_diboson_2016_lvvv.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2016_llll_lowMll = self.background_tree_diboson_2016_llll_lowMll.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2016_lllv_lowMll = self.background_tree_diboson_2016_lllv_lowMll.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_diboson_2016_llvv_lowMll = self.background_tree_diboson_2016_llvv_lowMll.pandas.df('weight_nominal').to_numpy()
+
+        self.weight_background_diboson_2016 = np.concatenate([self.weight_background_diboson_2016_ZqqZvv,self.weight_background_diboson_2016_ZqqZll,self.weight_background_diboson_2016_WqqZvv,self.weight_background_diboson_2016_WqqZll,self.weight_background_diboson_2016_WpqqWmlv,self.weight_background_diboson_2016_WplvWmqq,self.weight_background_diboson_2016_WlvZqq,self.weight_background_diboson_2016_llll,self.weight_background_diboson_2016_lllv,self.weight_background_diboson_2016_llvv,self.weight_background_diboson_2016_lvvv,self.weight_background_diboson_2016_llll_lowMll,self.weight_background_diboson_2016_lllv_lowMll,self.weight_background_diboson_2016_llvv_lowMll])
+
+        ### diboson weight background put together
+        self.weight_background_diboson = np.concatenate([self.weight_background_diboson_2018,self.weight_background_diboson_2017,self.weight_background_diboson_2016])
+
+        ### Numpy conversion of weights background ttZ
+        ## 2018
+        self.weight_background_ttZ_2018 = self.background_tree_ttZ_2018.pandas.df('weight_nominal').to_numpy()
+        ## 2017
+        self.weight_background_ttZ_2017 = self.background_tree_ttZ_2017.pandas.df('weight_nominal').to_numpy()
+        ## 2016
+        self.weight_background_ttZ_2016 = self.background_tree_ttZ_2016.pandas.df('weight_nominal').to_numpy()
+
+        ## ttZ background put together 
+        self.weight_background_ttZ = np.concatenate([self.weight_background_ttZ_2018,self.weight_background_ttZ_2017,self.weight_background_ttZ_2016])
+        
+        ### Numpy conversion of weights background ttbar
+        ## 2018
+        self.weight_background_ttbar_l_2018 = self.background_tree_ttbar_l_2018.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_ttbar_0l_2018 = self.background_tree_ttbar_0l_2018.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_ttbar_2l_2018 = self.background_tree_ttbar_2l_2018.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_ttbar_2018 = np.concatenate([self.weight_background_ttbar_l_2018,self.weight_background_ttbar_0l_2018,self.weight_background_ttbar_2l_2018])
+        ## 2017
+        self.weight_background_ttbar_l_2017 = self.background_tree_ttbar_l_2017.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_ttbar_0l_2017 = self.background_tree_ttbar_0l_2017.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_ttbar_2l_2017 = self.background_tree_ttbar_2l_2017.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_ttbar_2017 = np.concatenate([self.weight_background_ttbar_l_2017,self.weight_background_ttbar_0l_2017,self.weight_background_ttbar_2l_2017])
+        ## 2015-2016
+        self.weight_background_ttbar_l_2016 = self.background_tree_ttbar_l_2016.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_ttbar_0l_2016 = self.background_tree_ttbar_0l_2016.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_ttbar_2l_2016 = self.background_tree_ttbar_2l_2016.pandas.df('weight_nominal').to_numpy()
+        self.weight_background_ttbar_2016 = np.concatenate([self.weight_background_ttbar_l_2016,self.weight_background_ttbar_0l_2016,self.weight_background_ttbar_2l_2016])
+        ### ttbar weight background put together
+        self.weight_background_ttbar = np.concatenate([self.weight_background_ttbar_2018,self.weight_background_ttbar_2017,self.weight_background_ttbar_2016])
+        ## Weights put together in same order as background
+        self.weight_background = np.concatenate([self.weight_background_diboson,self.weight_background_ttZ,self.weight_background_ttbar])
+        print(self.weight_background_diboson.sum()*140)
+        print(self.weight_background_ttZ.sum()*140)
+        print(self.weight_background_ttbar.sum()*140)
+        self.weight_background = np.absolute(self.weight_background) * 139
+
         #Reshaping the weights
+
         self.weight_signal = np.reshape(self.weight_signal, (len(self.events_signal), 1))
         self.weight_background = np.reshape(self.weight_background, (len(self.events_background), 1))
+
         #Normalisation to the eventcount can be used instead of weights, especially if using data
         self.norm_signal = np.reshape([1./float(len(self.events_signal)) for x in range(len(self.events_signal))], (len(self.events_signal), 1))
         self.norm_background = np.reshape([1./float(len(self.events_background)) for x in range(len(self.events_background))], (len(self.events_background), 1))
@@ -192,7 +511,7 @@ class neuralNetworkEnvironment(object):
         #target combined is used to make sure the systematics are seen as signal for the first net in the combined training
         self.target_signal = np.reshape([1 for x in range(len(self.events_signal))], (len(self.events_signal), 1))
         self.target_background = np.reshape([0 for x in range(len(self.events_background))], (len(self.events_background), 1))
-        #The samples and corresponding targets are now split into a sample for training and a sample for testing. Keep in mind that the same random seed should be used for both splits
+        #The samples and corresponding targets are ZqqZlnow split into a sample for training and a sample for testing. Keep in mind that the same random seed should be used for both splits
         self.sample_training, self.sample_validation = train_test_split(np.concatenate((self.events_signal, self.events_background)), test_size = self.validation_fraction, random_state = self.seed)
         self.target_training, self.target_validation = train_test_split(np.concatenate((self.target_signal, self.target_background)), test_size = self.validation_fraction, random_state = self.seed)
         #Splitting the weights
@@ -213,11 +532,11 @@ class neuralNetworkEnvironment(object):
         self.model.add(Dense(self.discriminator_nodes,input_shape=(self.input_dimension)))
         self.model.add(Activation('elu'))
         for layercount in range(self.discriminator_layers - 1):
-            self.model.add(Dense(self.discriminator_nodes,activation = 'elu'))
+            self.model.add(Dense(self.discriminator_nodes,activation = 'relu'))
             self.model.add(BatchNormalization())
             self.model.add(Dropout(self.discriminator_dropout))
         self.model.add(Dense(1,activation='sigmoid'))
-        self.model.compile(loss='binary_crossentropy',weighted_metrics = [metrics.binary_accuracy],optimizer = self.discriminator_optimizer_adam)
+        self.model.compile(loss=binary_crossentropy,weighted_metrics = [metrics.binary_accuracy],optimizer = self.discriminator_optimizer)
         #self.model.compile(loss='binary_crossentropy',weighted_metrics =[metrics.binary_accuracy],optimizer = self.discriminator_optimizer)
         #self.model.summary()
         
@@ -240,6 +559,7 @@ class neuralNetworkEnvironment(object):
 
 
     def predictModel(self):
+
 
         self.model_prediction = self.model.predict(self.sample_training).ravel()
         self.model_prediction_test = self.model.predict(self.sample_validation).ravel()
@@ -270,7 +590,7 @@ class neuralNetworkEnvironment(object):
     def plotRoc(self,learning_rate):
         plt.title('Receiver Operating Characteristic with L_r=%.5f,m=%.3f,%i Epoch' % (learning_rate,self.discriminator_momentum,self.discriminator_epochs))
         plt.plot(self.fpr, self.tpr, 'g--', label='$AUC_{train}$ = %0.2f'% self.auc)
-        plt.plot(self.fpr_test, self.tpr_test, 'g--',color ='r', label='$AUC_{test}$ = %0.2f'% self.auc_test)
+        plt.plot(self.fpr_test, self.tpr_test, 'g--',color ='lime', label='$AUC_{test}$ = %0.2f'% self.auc_test)
         plt.legend(loc='lower right')
         plt.plot([0,1],[0,1],'r--')
         plt.xlim([-0.,1.])
@@ -287,9 +607,9 @@ class neuralNetworkEnvironment(object):
         self.background_histo = []
         for i in range(len(self.sample_validation)):
             if self.target_validation[i] == 1:
-                self.signal_histo.append(self.model_prediction[i])
+                self.signal_histo.append(self.model_prediction_test[i])
             if self.target_validation[i] == 0:
-                self.background_histo.append(self.model_prediction[i])
+                self.background_histo.append(self.model_prediction_test[i])
                 
         plt.hist(self.signal_histo, range=[0., 1.], linewidth = 2, bins=30, histtype="step",density = True,color=color_tW, label = "Signal")
         plt.hist(self.background_histo, range=[0., 1.], linewidth = 2, bins=30, histtype="step", density = True, color=color_tt, label = "Background")
@@ -388,8 +708,37 @@ class neuralNetworkEnvironment(object):
         plt.gcf().clear()
         ###
             
-            
         
+
+
+
+    def HistObject(self,Xaxisbins,Yaxisbins,range1,range2,bins,labelxaxis,savelabel,numbervariable):
+        self.hist_tZq = self.events_signal.transpose() 
+        self.hist_diboson = self.events_background_diboson.transpose() 
+        self.hist_ttZ = self.events_background_ttZ.transpose()
+        self.hist_ttbar = self.events_background_ttbar.transpose()
+
+        ax.ticklabel_format(style='sci', axis ='both', scilimits=(-4,4))
+        ax.tick_params(direction='in')
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        plt.locator_params(axis='x', nbins=Xaxisbins)
+        plt.locator_params(axis='y', nbins=Yaxisbins)
+        ax.xaxis.set_ticks_position('both')
+        ax.yaxis.set_ticks_position('both')
+        ax.tick_params(direction='in',which='minor', length=2)
+        plt.hist(self.hist_tZq[numbervariable], range=[range1, range2], linewidth = .75, bins=bins, histtype="step", color='magenta',label='tZq',density = True)
+        plt.hist(self.hist_diboson[numbervariable], range=[range1, range2], linewidth = .75, bins=bins, histtype="step", color='royalblue',label='diboson',density = True)
+        plt.hist(self.hist_ttZ[numbervariable], range=[range1, range2], linewidth = .75, bins=bins, histtype="step", color='lime',label='ttZ',density = True)
+        plt.hist(self.hist_ttbar[numbervariable], range=[range1, range2], linewidth = .75, bins=bins, histtype="step", color='red',label=r'$t\bar{t}$',density = True)
+
+        plt.legend(frameon = False)
+        plt.xlim(range1,range2)
+
+        plt.xlabel(labelxaxis,horizontalalignment='right',x=1.0)
+        plt.ylabel('Event density',va = 'top',y=0.87,labelpad=10)
+        plt.gcf().savefig(mysavedata + savelabel +'.png')
+        plt.gcf().clear()
 
     def Runtime(self,start,stop):
         file = open(self.output_job + 'params.txt','a')
@@ -398,42 +747,22 @@ class neuralNetworkEnvironment(object):
 
 
 
-#In the following options and variables are read in
-#This is done to keep the most important features clearly represented
-
-#You need to find a nice set of variables to use and add them as a text file
-#with open('/cephfs/user/s6chkirf/whk_ANN_variables.txt','r') as varfile:binary_crossentropy"
-  #  variableList = varfile.read().splitlines() binary_crossentropy"
-#binary_crossentropy"
-#print(variableList)binary_crossentropy"
-#def ReadOptions(region):
-#    with variables = variableListopen('/cephfs/user/s6chkirf/config_whk_ANN.txt','r') as infile:
-#        optionsList = infile.read().splitlines()
-#    OptionDict = dict()
-#    for options in optionsList:
-#		# definition of a comment
-#        if options.startswith('#'): continue        plt.ylabel('Training Loss')
-#        templist = options.split(' ')
-#        if len(templist) == 2:
-#            OptionDict[templist[0]] = templist[1]
-#        else:
-#            OptionDict[templist[0]] = templist[1:]
-#    return OptionDict
-#    # a dictionary of options is returned
-
-start = timer()
+start = timer() 
 
 first_training = neuralNetworkEnvironment()
 
 first_training.initialize_sample()
-first_training.My_DiscrimatorBuild()
-first_training.trainDiscriminator()
-first_training.predictModel()
-first_training.plotRoc(first_training.discriminator_lr)
-first_training.plotSeparation(first_training.discriminator_lr)
-first_training.plotAccuracy(first_training.discriminator_lr)
-first_training.plotLosses(first_training.discriminator_lr)
-first_training.ParamstoTxt()
+#first_training.My_DiscrimatorBuild()
+#first_training.trainDiscriminator()
+#first_training.predictModel()
+#first_training.plotRoc(first_training.discriminator_lr)
+#first_training.plotSeparation(first_training.discriminator_lr)
+#first_training.plotAccuracy(first_training.discriminator_lr)
+#first_training.plotLosses(first_training.discriminator_lr)
+#first_training.ParamstoTxt()
+
+first_training.HistObject(10,5,0,5,15,'$\eta(j_f)$','eta_jf_test',1)
+
 """
 ### For LR Plot
 filenames = []
@@ -443,6 +772,7 @@ for number in range(28):
     filenames.append(first_training.output_lr+'lrcurve_0_%i.txt' % (number+1))
 first_training.plot_lr(filenames)
 """
+
 ###
 end = timer()
 first_training.Runtime(start,end)
