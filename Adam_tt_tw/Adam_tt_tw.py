@@ -78,20 +78,20 @@ class neuralNetworkEnvironment(object):
         #Iterations are used for the adversarial part of the training
         #If you want to make the training longer you want to change these numbers, there is no early stopping atm, feel free to add it
         self.discriminator_epochs = epoch
-        self.batchSize = 2024
+        self.batchSize = 512
         #Setup of the networks, nodes and layers
-        self.discriminator_layers = 5
+        self.discriminator_layers = 8
         self.discriminator_nodes = 128
         #Setup of the networks, loss and optimisation   decay=1e-2,
         if Adam:
             self.discriminator_optimizer = keras.optimizers.adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay = 1e-8, clipnorm = 0, clipvalue = 0.005)  #, amsgrad = FALSE
         else:
-            self.discriminator_optimizer = SGD(lr = 0.1, momentum = 0.5,  nesterov=False)
+            self.discriminator_optimizer = SGD(lr = 0.15, momentum = 0.5, decay = 1e-8)
 
-        self.discriminator_dropout = 0.4
+        self.discriminator_dropout = 0.2
         self.discriminator_loss = binary_crossentropy
 
-        self.validation_fraction = 0.1
+        self.validation_fraction = 0.3
         
         #The following set of variables is used to evaluate the result
         #fpr_test = false positive rate, tpr_test = true positive rate
@@ -345,8 +345,8 @@ def train_AdamVsSGD(epoch):
 
 
 #train_multi(10, 100, True)
-#train_single(100, True)
-train_AdamVsSGD(20)
+train_single(100, True)
+#train_AdamVsSGD(20)
 
 
 
