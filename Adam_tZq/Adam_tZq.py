@@ -51,14 +51,14 @@ class neuralNetworkEnvironment(object):
     def __init__(self, changing_parameter, epoch, Adam):
         #At the moment not may variables are passed to the class. You might want to change this
         #A list of more general settings
-        self.variables = np.array(["m_b_jf" ,"eta_jf", "eta_jr", "pT_Z", "DeltaRMin", "q_lW", "pT_jr", "pT_jf", "eta_lW", "eta_Z", "pT_lW", "pT_W"]) #BAD!: "m_top", "mT_W"
+        self.variables = np.array([ "mT_W", "m_b_jf" ,"eta_jf", "eta_jr", "pT_Z", "DeltaRMin", "q_lW", "pT_jr", "pT_jf", "eta_lW", "eta_Z", "pT_lW", "pT_W"]) #BAD!"m_top",: 
         #["pt_lep1", "eta_lep1", "pt_lep2", "eta_lep2", "E_lep1", "E_lep2", "m_met", "E_jet1", "pt_lep3", "mass_jet2", "m_sumet", "pt_jet1", "E_lep2"]
         #The seed is used to make sure that both the events and the labels are shuffeled the same way because they are not inherently connected.
         self.seed = 193
         #All information necessary for the input
         #The exact data and targets are set later
-        self.input_signal_path = "/cephfs/user/s6taholm/tHq/run/testVar_fix/test_tZe.root"
-        self.input_background_path = "/cephfs/user/s6taholm/tHq/run/testVar_fix/diboson_e.root"
+        self.input_signal_path = "/cephfs/user/s6taholm/tHq/run/out/halloween_tZqFixed/tZq/mc16a.412063.aMCPy8EG_tllq_nf4.FS.nominal.root"
+        self.input_background_path = "/cephfs/user/s6taholm/tHq/run/out/halloween_tZqFixed/singleTop/mc16a.410646.PhPy8EG_Wt_DR_t.FS.nominal.root"
         self.signal_sample = "tHqLoop_nominal;1"
         self.background_sample = "tHqLoop_nominal;1"
         self.signal_tree = ur.open(self.input_signal_path)[self.signal_sample]
@@ -81,18 +81,18 @@ class neuralNetworkEnvironment(object):
         self.discriminator_epochs = epoch
         self.batchSize = 512
         #Setup of the networks, nodes and layers
-        self.discriminator_layers = 10
-        self.discriminator_nodes = 256
+        self.discriminator_layers = 12
+        self.discriminator_nodes = 128
         #Setup of the networks, loss and optimisation   decay=1e-2,
         if Adam:
             self.discriminator_optimizer = keras.optimizers.adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay = 1e-6, clipnorm = 0, clipvalue = 0.005)  #, amsgrad = FALSE
         else:
-            self.discriminator_optimizer = SGD(lr = 0.1, momentum = 0.5,  nesterov=False)
+            self.discriminator_optimizer = SGD(lr = 0.1, momentum = 0.5)
 
-        self.discriminator_dropout = 0.4
+        self.discriminator_dropout = 0.6
         self.discriminator_loss = binary_crossentropy
 
-        self.validation_fraction = 0.15
+        self.validation_fraction = 0.8
         
         #The following set of variables is used to evaluate the result
         #fpr_test = false positive rate, tpr_test = true positive rate
@@ -262,7 +262,7 @@ class neuralNetworkEnvironment(object):
 
     def plotAccuracy_multi(self, iterations, data_acc_array):
         for i in range(iterations):
-            plt.plot(data_acc_array[i], label=("Adam=", i))
+            plt.plot(data_acc_array[i], label=("Lr=", 0.1+0.01*i))
         plt.title('model accuracy')
         plt.ylabel('accuracy')
         plt.xlabel('epoch')
@@ -274,7 +274,7 @@ class neuralNetworkEnvironment(object):
 
     def plotloss_multi(self, iterations, data_loss_array):
         for i in range(iterations):
-            plt.plot(data_loss_array[i], label=("Adam=", i))
+            plt.plot(data_loss_array[i], label=("Lr=", 0.1+0.01*i))
         plt.title('loss')
         plt.ylabel('Loss')
         plt.xlabel('Epoch')
@@ -332,9 +332,9 @@ def train_AdamVsSGD(epoch):
     ##Trains iterations times. The data is saved. The Variable j is changing, so that different things can be tried out (e.g. learning rate*j)
     for j in range(2):
         if j==0:
-            first_training = neuralNetworkEnvironment(j, epoch, True)
+            first_training = neuralNetworkEnvironment(1, epoch, True)
         if j==1:
-            first_training = neuralNetworkEnvironment(j, epoch, False)
+            first_training = neuralNetworkEnvironment(1, epoch, False)
         first_training.initialize_sample()
         first_training.buildDiscriminator()
         first_training.trainDiscriminator()
@@ -345,9 +345,9 @@ def train_AdamVsSGD(epoch):
     first_training.plotAccuracy_multi(2, data_acc_array)
 
 
-#train_multi(10, 100, True)
-train_single(20, False)
-#train_AdamVsSGD(20)
+#train_multi(10, 10, False)
+train_single(10, False)
+#train_AdamVsSGD(10)
 
 
 
