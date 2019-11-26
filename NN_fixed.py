@@ -17,7 +17,7 @@ from keras.optimizers import SGD, Adam
 from keras.losses import binary_crossentropy
 import sklearn as skl
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, accuracy_score, confusion_matrix
 from sklearn.preprocessing import StandardScaler
 from sys import argv
 #Loading the packages for handling the data
@@ -64,7 +64,6 @@ data_background_ZJets = my_path_to_data + 'ZJets/'
 
 #Setting up the output directories
 output_path = '/cephfs/user/s6pinogg/PietBachelor/New_Samples/jobs/'
-#output_path = './jobs/'
 array_path = output_path + 'arrays/'
 if not os.path.exists(output_path):
     os.makedirs(output_path)
@@ -90,7 +89,8 @@ class neuralNetworkEnvironment(object):
         #At the moment not may variables are passed to the class. You might want to change this
         #A list of more general settings
        # self.variables = np.array(['m_b_jf','m_top','eta_jf','mT_W','q_lW','eta_lW','pT_W','pT_lW','m_Z','eta_Z','dR_jf_Z','pT_jf'])
-        self.variables = np.array(['m_b_jf','eta_jf','q_lW','eta_lW','pT_W','pT_lW','m_Z','eta_Z','dR_jf_Z','pT_jf','pT_jr','eta_jr','pT_Z','m_met','m_top','mT_W'])
+        self.variables = np.array(['m_b_jf','eta_jf','q_lW','eta_lW','pT_W','pT_lW','m_Z','eta_Z','dR_jf_Z','pT_jf','pT_jr','eta_jr','pT_Z','m_top','mT_W'])
+        #self.variables = np.array(['m_b_jf','eta_jf','q_lW','eta_lW','pT_W','pT_lW','eta_Z','dR_jf_Z','pT_jf','pT_jr','eta_jr','pT_Z','m_top','mT_W'])
         #self.variables = np.array(['eta_jf'])
 
         #The seed is used to make sure that both the events and the labels are shuffeled the same way because they are not inherently connected.
@@ -117,29 +117,31 @@ class neuralNetworkEnvironment(object):
         #All information for the length of the training. Beware that epochs might only come into the pretraining
         #Iterations are used for the adversarial part of the training
         #If you want to make the training longer you want to change these numbers, there is no early stopping atm, feel free to add it
-        self.discriminator_epochs = 350
+        self.discriminator_epochs = 20
         self.batchSize = 512
         #Setup of the networks, nodes and layers
         self.discriminator_layers = 3
         self.discriminator_nodes = 128
         #Setup of the networks, loss and optimisation
         self.my_optimizer = 'SGD'
-        self.discriminator_lr = float(sys.argv[1])
+        self.discriminator_lr = 0.1
         self.discriminator_momentum = 0.3
         self.discriminator_optimizer = SGD(lr = self.discriminator_lr, momentum = self.discriminator_momentum)
-        self.discriminator_optimizer_adam = Adam(lr = self.discriminator_lr,beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay = self.discriminator_lr/self.discriminator_epochs,amsgrad=True)
+        self.discriminator_optimizer_adam = Adam(lr = self.discriminator_lr,beta_1=0.9, beta_2=0.999, epsilon=1e-8)
         self.discriminator_dropout = 0.3
         self.discriminator_loss = 'binary_crossentropy'
         self.validation_fraction = 0.1
 
-        self.output_job = output_path + 'epochs_%i/lr_%.2e/momentum_%.2f/' % (self.discriminator_epochs,self.discriminator_lr,self.discriminator_momentum)
+        self.output_job = output_path + 'epochs_%i/layers_%i/nodes_%i/lr_%.2e/momentum_%.2f/' % (self.discriminator_epochs,self.discriminator_layers,self.discriminator_nodes,self.discriminator_lr,self.discriminator_momentum)
         self.output_lr = output_path + 'epochs_%i/' % (self.discriminator_epochs)
-        self.output_curve = self.output_lr + 'txtlr/'
+        self.output_lrcurve = self.output_lr + '/Optimize/%.1e/'%(self.discriminator_momentum)
+        self.output_curve = self.output_lrcurve + 'txtlr/'
 
         if not os.path.exists(self.output_job):
             os.makedirs(self.output_job)
         if not os.path.exists(self.output_curve):
             os.makedirs(self.output_curve)
+
 
         #The following set of variables is used to evaluate the result
         #fpr = false positive rate, tpr = true positive rate
@@ -242,8 +244,7 @@ class neuralNetworkEnvironment(object):
         self.weight_background = np.reshape(self.weight_background, (len(self.events_background), 1))
 
         #Calculating the weight ratio to scale the signal weight up. This tries to take the high amount of background into account
-        self.weight_ratio = (self.weight_signal.sum())/ self.weight_background.sum()
-        self.weight_signal = self.weight_signal / self.weight_ratio
+        
 
         #Setting up the targets
         #target combined is used to make sure the systematics are seen as signal for the first net in the combined training
@@ -286,8 +287,8 @@ class neuralNetworkEnvironment(object):
     def predictModel(self):
         # Predict Model on 'unknown' data and analyze predicition with i.e ROC Curve and AUC Value
         
-        self.model_prediction = self.model.predict(self.sample_training).ravel()
-        self.model_prediction_test = self.model.predict(self.sample_validation).ravel()
+        self.model_prediction = self.model.predict(self.sample_training,batch_size=self.batchSize).ravel()
+        self.model_prediction_test = self.model.predict(self.sample_validation,batch_size=self.batchSize).ravel()
         self.fpr, self.tpr, self.threshold = roc_curve(self.target_training, self.model_prediction)
         self.fpr_test, self.tpr_test, self.threshold_test = roc_curve(self.target_validation, self.model_prediction_test)
         self.auc = auc(self.fpr, self.tpr)
@@ -295,6 +296,7 @@ class neuralNetworkEnvironment(object):
 
         print('Discriminator AUC Training:', self.auc)
         print('Discriminator AUC Test:', self.auc_test)
+
 
     def plotLosses(self):
         ax = plt.subplot(111)
@@ -323,25 +325,52 @@ class neuralNetworkEnvironment(object):
         plt.legend(frameon=False)
         #plt.show()
         plt.gcf().savefig(self.output_job + 'roc.png')
-        plt.gcf().clear()   
+        plt.gcf().clear()  
+ 
 
     def plotSeparation(self):
-        self.signal_histo = []
-        self.background_histo = []
+        self.negative=0.0
+        self.positive=0.0 # For Gini Index
+        self.signal_histo_test = []
+        self.background_histo_test = []
         for i in range(len(self.sample_validation)):
             if self.target_validation[i] == 1:
-                self.signal_histo.append(self.model_prediction_test[i])
+                self.signal_histo_test.append(self.model_prediction_test[i])
+                self.positive=self.positive +1
             if self.target_validation[i] == 0:
-                self.background_histo.append(self.model_prediction_test[i])
+                self.background_histo_test.append(self.model_prediction_test[i])
+                self.negative=self.negative +1    
+        plt.hist(self.signal_histo_test, range=[0., 1.], linewidth = 2, bins=30, histtype="step",density = True,color=color_tW, label = "Signal")
+        plt.hist(self.background_histo_test, range=[0., 1.], linewidth = 2, bins=30, histtype="step", density = True, color=color_tt, label = "Background")
+        plt.legend()
+        plt.title('Separation Test')
+        plt.xlabel('Network response', horizontalalignment='left', fontsize='large')
+        plt.ylabel('Event fraction', fontsize='large')
+        plt.legend(frameon=False)
+        plt.gcf().savefig(self.output_job + 'separation_test.png')
+        plt.gcf().clear()
+        ### In hopes of getting Gini index
+        self.eff_test = self.positive/(self.negative+self.positive)*self.tpr_test + self.negative/(self.negative+self.positive)*self.fpr_test
+        self.gini = auc(self.eff_test,self.tpr_test)
+
+        self.signal_histo = []
+        self.background_histo = []
+        for i in range(len(self.sample_training)):
+            if self.target_training[i] == 1:
+                self.signal_histo.append(self.model_prediction[i])
+            if self.target_training[i] == 0:
+                self.background_histo.append(self.model_prediction[i])
                 
         plt.hist(self.signal_histo, range=[0., 1.], linewidth = 2, bins=30, histtype="step",density = True,color=color_tW, label = "Signal")
         plt.hist(self.background_histo, range=[0., 1.], linewidth = 2, bins=30, histtype="step", density = True, color=color_tt, label = "Background")
         plt.legend()
+        plt.title('Separation Training')
         plt.xlabel('Network response', horizontalalignment='left', fontsize='large')
         plt.ylabel('Event fraction', fontsize='large')
         plt.legend(frameon=False)
-        plt.gcf().savefig(self.output_job + 'separation.png')
+        plt.gcf().savefig(self.output_job + 'separation_training.png')
         plt.gcf().clear()
+
 
     def plotWeightedAccuracy(self):
         ax = plt.subplot(111)
@@ -401,12 +430,12 @@ class neuralNetworkEnvironment(object):
 
             
 
-        file = open(self.output_curve + 'lrcurve_%.1e.txt'%(self.discriminator_lr),'w')
-        file.write('%.4e,%.4e,%.4e,%.4e,%.4e,%.4e,%.4e'%(self.discriminator_history.history['loss'][-1],self.discriminator_history.history['val_loss'][-1],self.discriminator_lr,self.auc,self.discriminator_history.history['binary_accuracy'][-1],self.discriminator_history.history['val_binary_accuracy'][-1],self.discriminator_momentum))
+        file = open(self.output_curve + 'lr_%.1e_la_%i.txt'%(self.discriminator_lr,self.discriminator_layers),'w')
+        file.write('%.4e,%.4e,%.4e,%.4e,%.4e,%.4e,%.4e,%.4e,%.4e,%i,%i'%(self.discriminator_history.history['loss'][-1],self.discriminator_history.history['val_loss'][-1],self.discriminator_lr,self.auc,self.discriminator_history.history['binary_accuracy'][-1],self.discriminator_history.history['val_binary_accuracy'][-1],self.discriminator_momentum,self.discriminator_history.history['val_binary_accuracy'][0],self.discriminator_history.history['binary_accuracy'][0],self.discriminator_nodes,self.discriminator_layers))
         file.close()
 
     def plot_lr(self,filelist):
-        with open(self.output_lr + 'plot_lr.txt','w') as self.outfile:
+        with open(self.output_lrcurve + 'plot_lr.txt','w') as self.outfile:
             for fname in filelist:
                 with open(self.output_curve + fname,'r') as self.infile:
                     self.outfile.write(self.infile.read())
@@ -416,9 +445,13 @@ class neuralNetworkEnvironment(object):
         loss_plot = []
         auc_list = []
         acc_list= []
+        acc_list_0 = []
         val_acc_list= []
+        val_acc_list_0 = []
         momentum_list= []
-        self.outfile = self.output_lr + 'plot_lr.txt'
+        nodes = []
+        layers = []
+        self.outfile = self.output_lrcurve + 'plot_lr.txt'
         results = open(self.outfile,'r')
         for line in results:
             dataline = line
@@ -430,6 +463,10 @@ class neuralNetworkEnvironment(object):
             acc_list.append(float(data[4]))
             val_acc_list.append(float(data[5]))
             momentum_list.append(float(data[6]))
+            val_acc_list_0.append(float(data[7]))
+            acc_list_0.append(float(data[8]))
+            nodes.append(int(data[9]))
+            layers.append(int(data[10]))
         lr_list = np.array(lr_list)
         val_loss_plot = np.array(val_loss_plot)
         loss_plot = np.array(loss_plot)
@@ -437,6 +474,10 @@ class neuralNetworkEnvironment(object):
         val_acc_list = np.array(val_acc_list)
         acc_list = np.array(acc_list)
         momentum_list = np.array(momentum_list)
+        val_acc_list_0 = np.array(val_acc_list_0)
+        acc_list_0 = np.array(acc_list_0)
+        nodes=np.array(nodes)
+        layers= np.array(layers)
 
         ### Plot Lists
         ax = plt.subplot(111)
@@ -447,7 +488,7 @@ class neuralNetworkEnvironment(object):
         plt.xlabel('Learning rate')
         plt.ylabel('Loss')
         plt.legend()
-        plt.gcf().savefig(self.output_lr+'LRPlot'+'_'+ '%.2f.png'%self.discriminator_momentum)
+        plt.gcf().savefig(self.output_lrcurve+'LRPlot.png')
         plt.gcf().clear()
 
         ax = plt.subplot(111)
@@ -457,15 +498,39 @@ class neuralNetworkEnvironment(object):
         plt.plot(lr_list,acc_list,color="red",marker='x',linestyle='None',label='Accuracy')
         plt.legend()
         plt.xlabel('Learning rate')
-        plt.gcf().savefig(self.output_lr+'LRAucPlot'+'_'+ '%.2f.png' % (self.discriminator_momentum))
+        plt.gcf().savefig(self.output_lrcurve+'LRAucPlot.png')
         plt.gcf().clear()
 
+        ax = plt.subplot(111)
+        ax.ticklabel_format(style='sci', axis ='both', scilimits=(-2,2),useMathText = True)
+        ax.set_xscale("log", nonposx='clip')
+        plt.plot(lr_list,val_acc_list-val_acc_list_0,marker='x',linestyle = 'None',label = 'Test',color = color_tW)
+        plt.plot(lr_list,acc_list-acc_list_0,marker='x',linestyle = 'None',label = 'Training',color = color_tt)
+        plt.legend()
+        plt.xlabel('Learning Rate')
+        plt.title('Difference between Accuracy in first and last epoch')
+        plt.gcf().savefig(self.output_lrcurve+'learnvalue.png')
+        plt.gcf().clear()
 
+        ax = plt.subplot(111)
+        ax.ticklabel_format(style='sci', axis ='both', scilimits=(-2,2),useMathText = True)
+        plt.plot(layers,auc_list,color='navy',marker='x',linestyle='None',label='AUC Value')
+        plt.xlabel('Number hidden layers')
+        plt.legend()
+        plt.title('Impact of # hidden layers')
+        plt.gcf().savefig(self.output_lrcurve+'layerimpact.png')
+        plt.gcf().clear()      
 
-        ###
-            
+        ax = plt.subplot(111)
+        ax.ticklabel_format(style='sci', axis ='both', scilimits=(-2,4),useMathText = True)
+        plt.plot(nodes,auc_list,color='navy',marker='x',linestyle='None',label='AUC Value')
+        plt.xlabel('Number of nodes')
+        plt.legend()
+        plt.title('Impact of # nodes in hidden layers')
+        plt.gcf().savefig(self.output_lrcurve+'nodesimpact.png')
+        plt.gcf().clear()      
+
         
-
 
 
     def HistObject(self,Xaxisbins,Yaxisbins,range1,range2,bins,labelxaxis,savelabel,numbervariable):
@@ -550,12 +615,12 @@ training.ParamstoTxt()
 #training.HistObject(10,6,0,5.,16,'$\eta(j_r)$','eta_jr',11)
 #training.HistObject(6,6,0,300.,11,'$p_T(Z)$[GeV]','pT_Z',12)
 #training.HistObject(6,6,0,600,31,'$E^{miss}$[GeV]','m_met',13)
-#training.HistObject(6,6,0,600,31,'$m_t$[GeV]','m_top',14)
-#training.HistObject(12,6,0,240,8,'$m_t$[GeV]','mT_W',15)
+#training.HistObject(6,6,0,600,31,'$m_t$[GeV]','m_top',13)
+#training.HistObject(12,6,0,240,8,'$m_t$[GeV]','mT_W',14)
 ###
 
 text_files = [f for f in os.listdir(training.output_curve) if f.endswith('.txt')]
-training.plot_lr(text_files)
+
 
 end = timer()
 training.Runtime(start,end)

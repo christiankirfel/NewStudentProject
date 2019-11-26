@@ -1,0 +1,13 @@
+We are using the SGD optimizer at the moment
+Number of epochs: 150
+Batch Size: 512
+Number of hidden layers: 3
+Number of nodes: 40
+Dropout: 0.20
+Validation fraction: 0.20
+Learning rate:9.000e-03
+Momentum:0.90
+Loss after 150 epochs: 1.06662e-03
+Validation Loss after 150 epochs: 1.04560e-03
+Discriminator AUC:0.853
+Runtime of program: 323.63 seconds
