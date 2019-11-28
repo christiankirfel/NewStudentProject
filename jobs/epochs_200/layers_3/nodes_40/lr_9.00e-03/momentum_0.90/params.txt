@@ -7,7 +7,7 @@ Dropout: 0.20
 Validation fraction: 0.20
 Learning rate:9.000e-03
 Momentum:0.90
-Loss after 200 epochs: 1.05048e-03
-Validation Loss after 200 epochs: 1.02955e-03
-Discriminator AUC:0.856
-Runtime of program: 407.14 seconds
+Loss after 200 epochs: 1.06175e-03
+Validation Loss after 200 epochs: 1.02895e-03
+Discriminator AUC:0.857
+Runtime of program: 400.80 seconds

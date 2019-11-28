@@ -6,12 +6,15 @@ import math
 import sys
 import matplotlib
 import glob
-
+import keras.backend as K
 ###time measurement
 from timeit import default_timer as timer
 ###
 
 from keras.models import Sequential, Model
+
+from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
+#from keras.utils import plot_model
 from keras.layers import Dense, Input, BatchNormalization, Dropout, Activation
 from keras import metrics
 from keras.optimizers import SGD, Adam
@@ -21,6 +24,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_curve, auc
 from sklearn.preprocessing import StandardScaler
 from sys import argv
+from scipy import stats
 #Loading the packages for handling the data
 import uproot as ur
 import pandas 
@@ -77,12 +81,13 @@ if not os.path.exists(array_path):
     os.makedirs(array_path)
 
 mysavedata = '/cephfs/user/s6pinogg/PietBachelor/Histo_Data/'
-
+eventHistpath = '/cephfs/user/s6pinogg/PietBachelor/Histo_Event/'
 
 
 if not os.path.exists(mysavedata):
     os.makedirs(mysavedata)
-
+if not os.path.exists(eventHistpath):
+    os.makedirs(eventHistpath)
 
 
 
@@ -122,7 +127,7 @@ class neuralNetworkEnvironment(object):
         #All information for the length of the training. Beware that epochs might only come into the pretraining
         #Iterations are used for the adversarial part of the training
         #If you want to make the training longer you want to change these numbers, there is no early stopping atm, feel free to add it
-        self.discriminator_epochs = 500
+        self.discriminator_epochs = 2200
         self.batchSize = 512
         #Setup of the networks, nodes and layers
         self.discriminator_layers = 3
@@ -132,7 +137,7 @@ class neuralNetworkEnvironment(object):
         self.discriminator_lr = 0.009
         self.discriminator_momentum = 0.9
         self.discriminator_optimizer = SGD(lr = self.discriminator_lr, momentum = self.discriminator_momentum)
-        self.discriminator_optimizer_adam = Adam(lr = self.discriminator_lr,beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay = self.discriminator_lr/self.discriminator_epochs,amsgrad=True)
+        self.discriminator_optimizer_adam = Adam(lr = 1e-5,beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay = self.discriminator_lr/self.discriminator_epochs,amsgrad=True)
         self.discriminator_dropout = 0.2
         self.discriminator_loss = 'binary_crossentropy'
         self.validation_fraction = 0.2
@@ -185,6 +190,7 @@ class neuralNetworkEnvironment(object):
         ### Signal 
         self.events_signal = self.read_root(data_signal,self.signal_sample,self.variables)
         self.weight_signal = self.read_root(data_signal,self.signal_sample,'weight_nominal') * 139
+        self.weight_signal = np.absolute(self.weight_signal)
         ###Background
         ##Diboson
         self.events_background_diboson = self.read_root(data_background_diboson,self.background_sample,self.variables)
@@ -233,6 +239,13 @@ class neuralNetworkEnvironment(object):
         self.events_background = self.ConArrays([self.events_background_diboson,self.events_background_ttV,self.events_background_ST,self.events_background_ttbar_all])
         self.weight_background = self.ConArrays([self.weights_background_diboson,self.weights_background_ttV,self.weights_background_ST,self.weights_background_ttbar_all])
         self.weight_background = np.absolute(self.weight_background)
+
+        ### Background for later use (Histogram etc)
+        self.events_background_ttZ_tWZ = np.concatenate([self.events_background_ttZ,self.events_background_tWZ])
+        self.events_background_ttZ_tWZ_ttH = np.concatenate([self.events_background_ttZ,self.events_background_tWZ,self.events_background_ttH])
+        self.events_background_ttbar_tW = np.concatenate([self.events_background_ttbar_all,self.events_background_tW])
+
+
         ## Check if the Event yields are correct 
         print('Events tZQ:' + '%.2f'%(self.weight_signal.sum()))
         print('Events diboson:' + '%.2f'%self.weights_background_diboson.sum())
@@ -265,12 +278,14 @@ class neuralNetworkEnvironment(object):
         self.weight_training, self.weight_validation = train_test_split(np.concatenate((self.weight_signal, self.weight_background)), test_size = self.validation_fraction, random_state = self.seed)
         #Setting up a scaler
         #A scaler makes sure that all variables are normalised to 1 and have the same order of magnitude for that reason
-        scaler = StandardScaler()
-        self.sample_training = scaler.fit_transform(self.sample_training)
-        self.sample_validation = scaler.fit_transform(self.sample_validation)
+        self.scaler_test = StandardScaler().fit(self.sample_training)
+        #self.scaler = StandardScaler()
+        self.sample_training = self.scaler_test.transform(self.sample_training)
+        self.sample_validation = self.scaler_test.transform(self.sample_validation)
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-        
+
+
         ## Now we want to build our Neural Network
     def My_DiscrimatorBuild(self):
         self.model = Sequential()
@@ -282,13 +297,15 @@ class neuralNetworkEnvironment(object):
             self.model.add(Dropout(self.discriminator_dropout))
         self.model.add(Dense(1,activation='sigmoid'))
         self.model.compile(loss=binary_crossentropy,metrics=['binary_accuracy'],weighted_metrics = [metrics.binary_accuracy],optimizer = self.discriminator_optimizer)
+        #plot_model(self.model, to_file=self.output_job+'model.png')
         self.model.summary()
 
 
 
     def trainDiscriminator(self):
         # With our Neural Network set up, we can now fit the training and test data
-        self.discriminator_history = self.model.fit(self.sample_training, self.target_training.ravel(), epochs=self.discriminator_epochs, batch_size = self.batchSize, sample_weight = self.weight_training.ravel(), validation_data = (self.sample_validation, self.target_validation, self.weight_validation.ravel()))
+        reduce_lr = ReduceLROnPlateau(monitor='binary_accuracy',factor = 0.2,patience=5,min_lr=1e-5)
+        self.discriminator_history = self.model.fit(self.sample_training, self.target_training.ravel(), epochs=self.discriminator_epochs, batch_size = self.batchSize, sample_weight = self.weight_training.ravel(), validation_data = (self.sample_validation, self.target_validation, self.weight_validation.ravel()),callbacks=[reduce_lr])
         self.discriminator_history_array.append(self.discriminator_history)
         print(self.discriminator_history.history.keys())
 
@@ -513,6 +530,17 @@ class neuralNetworkEnvironment(object):
         plt.gcf().clear()
 
     def purityPlot(self):
+
+
+        (n_s,bins_s,patches_s) = plt.hist(self.signal_histo_test, range=[0., 1.], bins=50,density=True)
+        (n_b,bins_b,patches_b) = plt.hist(self.background_histo_test, range=[0., 1.], bins=50,density=True)
+        plt.gcf().clear()
+        nbins= np.linspace((bins_s[0]+bins_s[1])/2,(bins_s[-1]+bins_s[-2])/2,50)
+        self.purity = n_s/(n_s+n_b)
+
+        x = np.linspace(0,1,500)
+        y = x
+
         ax = plt.subplot(111)
         ax.tick_params(direction='in')
         ax.xaxis.set_minor_locator(AutoMinorLocator())
@@ -520,13 +548,10 @@ class neuralNetworkEnvironment(object):
         ax.xaxis.set_ticks_position('both')
         ax.yaxis.set_ticks_position('both')
         ax.tick_params(direction='in',which='minor', length=2)
-
-        self.purity = (self.model_prediction_test+1)/2
-        x = np.linspace(0,1,500)
-        y = (x+1)/2
+        
         plt.xlim(0,1)
-        plt.plot(x,y,color='r',linewidth=2)
-        plt.plot(self.model_prediction_test[::1000],self.purity[::1000],color='blue',marker='x',linestyle ='None',markersize=4.5)
+        plt.plot(x,y,color='r',linewidth=1)
+        plt.plot(nbins,self.purity,color='blue',marker='+',linestyle ='None',markersize=4.0)
         plt.xlabel('Network Output')
         plt.ylabel('Purity')
         plt.gcf().savefig(self.output_job + 'purity.png')   
@@ -534,10 +559,9 @@ class neuralNetworkEnvironment(object):
         
 
 
-
+    ## Function to plot Histogram of Variables, with parameters s.t. you can hist any variable
     def HistObject(self,Xaxisbins,Yaxisbins,range1,range2,bins,labelxaxis,savelabel,numbervariable):
-        self.events_background_ttZ_tWZ = np.concatenate([self.events_background_ttZ,self.events_background_tWZ])
-        self.events_background_ttbar_tW = np.concatenate([self.events_background_ttbar_all,self.events_background_tW])
+
 
         self.hist_tZq = self.events_signal.transpose() 
         self.hist_diboson = self.events_background_diboson.transpose() 
@@ -583,18 +607,22 @@ class neuralNetworkEnvironment(object):
 
         plt.gcf().savefig(mysavedata + savelabel +'.png')
         plt.gcf().clear()
+    ## Histogram of Neural Network output 
+    def histPrediction(self,event,colors,eventlabel,savelabel):
 
-    def histPrediction(self):
-        self.events_signal = StandardScaler().fit_transform(self.events_signal)
-        self.events_background = StandardScaler().fit_transform(self.events_background)
-
-        ax1 = plt.subplot(111)
-        self.pred_hist = self.model.predict(self.events_signal,batch_size = self.batchSize).ravel()
-        self.pred_hist_2 = self.model.predict(self.events_background,batch_size = self.batchSize).ravel()
-        print(self.pred_hist)
-        plt.hist(self.pred_hist, range=[0., 1.], linewidth = .75, bins=30, histtype="step", color='magenta',label='tZq',density = True)
-        plt.hist(self.pred_hist_2, range=[0., 1.], linewidth = .75, bins=30, histtype="step", color='blue',label='background',density = True)
-        plt.gcf().savefig(self.output_job + 'test.png')
+        ax = plt.subplot(111)
+        ax.tick_params(direction='in')
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        ax.xaxis.set_ticks_position('both')
+        ax.yaxis.set_ticks_position('both')
+        ax.tick_params(direction='in',which='minor', length=2)
+        self.pred_hist = self.model.predict(self.scaler_test.transform(event),batch_size = self.batchSize).ravel()
+        plt.hist(self.pred_hist, range=[0., 1.], linewidth = 2, bins=30, histtype="step", color=colors,label=eventlabel,density = True)
+        plt.xlim(0,1)
+        plt.xlabel('NN output')
+        plt.legend()
+        plt.gcf().savefig(eventHistpath + savelabel + '.png')
         plt.gcf().clear()
         
     def Runtime(self,start,stop):
@@ -616,9 +644,15 @@ training.plotWeightedAccuracy()
 training.plotAccuracy()
 training.purityPlot()
 training.ParamstoTxt()
-training.histPrediction()
+
 
 ###
+training.histPrediction(training.events_signal,'magenta','tZq','tZq')
+training.histPrediction(training.events_background_diboson,'darkturquoise','Diboson','diboson')
+training.histPrediction(training.events_background_ZJets,'orange','Z+Jets','ZJets')
+training.histPrediction(training.events_background_ttbar_tW,'red',r'$t\bar{t} + tW$','ttbartw')
+training.histPrediction(training.events_background_ttZ_tWZ_ttH,'lime',r'$t\bar{t}Z + t\bar{t}H + tWZ$','ttvtthtwz')
+training.histPrediction(training.events_background_tt2l,'red',r'$t\bar{t} 2l$','ttbar2l')
 #self.variables = np.array(['m_b_jf','eta_jf','q_lW','eta_lW','pT_W','pT_lW','m_Z','eta_Z','dR_jf_Z','pT_jf','pT_jr','eta_jr','pT_Z','m_met','m_top','mT_W'])
 #training.HistObject(10,5,0,800,16,'$m(bj_F)$','m_b_jf',0)
 #training.HistObject(10,5,0,5,15,'$\eta(j_f)$','eta_jf',1)
