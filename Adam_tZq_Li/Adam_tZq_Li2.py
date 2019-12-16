@@ -13,6 +13,7 @@ import sklearn as skl
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_curve, auc
 from sklearn.preprocessing import StandardScaler
+from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,AutoMinorLocator, MaxNLocator)
 #Loading the packages for handling the data
 import uproot as ur
 import pandas 
@@ -31,9 +32,22 @@ color_tt2 = '#FF6600'
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+def root_data(inputfile, tree_name, branch_name, verbose):
+    first_file = True
+    temp_array = np.array([])
+    for fileName, value_array in ur.iterate(inputfile + "/*/*.root", tree_name, branch_name, reportfile=True, outputtype = pandas.DataFrame):
+        if (verbose == True):
+            print("IO : Current file {}".format(fileName.name))
+        if first_file == True:
+            temp_array = value_array
+            first_file = False
+        else:
+            temp_array = np.concatenate([temp_array, value_array])
+    return temp_array
 
 #Setting up the output directories
-output_path = 'output_Adam_tZq_Li/'
+output_path = 'output/output_test_XJ1B/Adam_' + sys.argv[1] + '_Lr_' + sys.argv[2] + '_Nodes_' + sys.argv[3] + '_Layers_' + sys.argv[4] + '_Dropout_' + sys.argv[5]
+output_path = output_path +'_Validation_' + sys.argv[6] + '_Batchsize_' + sys.argv[7] + '_Decay_' + sys.argv[8] + '_Momentum_' + sys.argv[9] + '/'
 array_path = output_path + 'arrays/'
 if not os.path.exists(output_path):
     os.makedirs(output_path)
@@ -48,21 +62,24 @@ plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 #This is the main class for the adversarial neural network setup
 class neuralNetworkEnvironment(object):
 
-    def __init__(self, changing_parameter, epoch, Adam):
+    def __init__(self, changing_parameter, Adam,):
         #At the moment not may variables are passed to the class. You might want to change this
         #A list of more general settings
-        self.variables = np.array(["Sp_l1_l3", "Sp_l2_l3", "Sp_b_l1", "Sp_b_l2", "Sp_b_l3", "Sp_f_b"]) #, "Sp_l1_r", "Sp_l2_r", "Sp_l3_r", "Sp_fj_r", "Sp_bj_r", "Sp_l1_f", "Sp_l2_f", "Sp_l3_f"
-        #["pt_lep1", "eta_lep1", "pt_lep2", "eta_lep2", "E_lep1", "E_lep2", "m_met", "E_jet1", "pt_lep3", "mass_jet2", "m_sumet", "pt_jet1", "E_lep2"]
+        if (sys.argv[11]=="3j1b"):
+            self.variables = np.array(["m_Z", "m_top", "m_b_jf", "charge_lep3", "Sp_l1_l3", "Sp_l2_l3", "Sp_b_l1", "Sp_b_l2", "Sp_b_l3", "Sp_f_b", "Sp_l1_r", "Sp_l2_r", "Sp_l3_r", "Sp_fj_r", "Sp_bj_r", "Sp_l1_f", "Sp_l2_f", "Sp_l3_f"]) 
+        if (sys.argv[11]=="2j1b"):
+            self.variables = np.array(["m_Z", "m_top", "m_b_jf", "charge_lep3", "Sp_l1_l3", "Sp_l2_l3", "Sp_b_l1", "Sp_b_l2", "Sp_b_l3", "Sp_f_b", "Sp_l1_f", "Sp_l2_f", "Sp_l3_f"]) 
         #The seed is used to make sure that both the events and the labels are shuffeled the same way because they are not inherently connected.
         self.seed = 193
         #All information necessary for the input
         #The exact data and targets are set later
-        self.input_signal_path = "/cephfs/user/s6ribaum/gitlab/run/condor/signal.root"
-        self.input_background_path = "/cephfs/user/s6ribaum/gitlab/run/condor/background.root"
+
+        ###Testing multible input files
+        #self.dataFile  = "/cephfs/user/s6taholm/tHq/run/out/halloween_tZqFixed/tZq/mc16a.412063.aMCPy8EG_tllq_nf4.FS.nominal.root"
+        self.sFile     = "/cephfs/user/s6ribaum/gitlab/run/condor/root_output/Signal"
+        self.bFile     = "/cephfs/user/s6ribaum/gitlab/run/condor/root_output/Background"
         self.signal_sample = "tHqLoop_nominal;1"
         self.background_sample = "tHqLoop_nominal;1"
-        self.signal_tree = ur.open(self.input_signal_path)[self.signal_sample]
-        self.background_tree = ur.open(self.input_background_path)[self.background_sample]
         self.sample_training = None
         self.sample_validation = None
         self.target_training = None
@@ -78,21 +95,21 @@ class neuralNetworkEnvironment(object):
         #All information for the length of the training. Beware that epochs might only come into the pretraining
         #Iterations are used for the adversarial part of the training
         #If you want to make the training longer you want to change these numbers, there is no early stopping atm, feel free to add it
-        self.discriminator_epochs = epoch
-        self.batchSize = 512
+        self.discriminator_epochs = int(sys.argv[10])
+        self.batchSize = int(sys.argv[7])
         #Setup of the networks, nodes and layers
-        self.discriminator_layers = 12
-        self.discriminator_nodes = 128
-        #Setup of the networks, loss and optimisation   decay=1e-2,
+        self.discriminator_layers = int(sys.argv[4])
+        self.discriminator_nodes = int(sys.argv[3])
+        #Setup of the networks, loss and optimisation  
         if Adam:
-            self.discriminator_optimizer = keras.optimizers.adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay = 1e-8)  #, amsgrad = FALSE 
+            self.discriminator_optimizer = keras.optimizers.adam(lr=float(sys.argv[2]), beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay = float(sys.argv[8]))  #, amsgrad = True
         else:
-            self.discriminator_optimizer = SGD(lr = 0.5, momentum = 0.5)
+            self.discriminator_optimizer = SGD(lr = float(sys.argv[2]), momentum = float(sys.argv[9]))
 
-        self.discriminator_dropout = 0.4
+        self.discriminator_dropout = float(sys.argv[5])
         self.discriminator_loss = binary_crossentropy
 
-        self.validation_fraction = 0.8
+        self.validation_fraction = float(sys.argv[6])
         
         #The following set of variables is used to evaluate the result
         #fpr_test = false positive rate, tpr_test = true positive rate
@@ -105,24 +122,58 @@ class neuralNetworkEnvironment(object):
         self.auc_test = 0.  #Area under the curve for testing
 
         #Adding Callbacks for model and training
-        #self.EarlyStop1 = EarlyStopping(monitor='loss', mode='min', verbose =1, patience = 100)
+        self.earlystopping = {'monitor':'loss','min_delta':0.05,'patience':10,'mode':'auto'}
         
 
+        ##Test from CWoLa_defs.py
+    
+    def define_input_and_weights(self):
+        ## Signal Events:
+        print("IO : Defining signal events")
+        if os.path.isdir(self.sFile): 
+            print("IO : \tSignal events are coming from a directory")
+            temp_array_signal_events = np.array([])
+            temp_array_signal_events = root_data(self.sFile, self.signal_sample, self.variables, False)
+            self.events_signal = temp_array_signal_events      
+        else : 
+            print("IO : \tSignal events are coming from a file")
+            self.events_signal = ur.open(self.sFile)[self.signal_sample].pandas.df(self.variables).to_numpy()
+        print("IO : Finished defining signal events")
+        ##Background Events:
+        print("IO : Defining background events")
+        if os.path.isdir(self.bFile): 
+            print("IO : \tBackground events are coming from a directory")
+            temp_array_background_events = np.array([])
+            temp_array_background_events = root_data(self.bFile, self.background_sample, self.variables, False)
+            self.events_background = temp_array_background_events
+        else : 
+            print("IO : \tBackground events are coming from a file")
+            self.events_background = ur.open(self.bFile)[self.background_sample].pandas.df(self.variables).to_numpy() 
+        print("IO : Finished defining background events")
+        ##Signal weights
+        print("IO : Defining signal weights")
+        if os.path.isdir(self.sFile): 
+            print("IO : \tSignal weights are coming from a directory")
+            temp_array_signal_weights = np.array([])
+            temp_array_signal_weights = root_data(self.sFile, self.signal_sample, "weight_nominal", False)*139
+            self.weight_signal = temp_array_signal_weights    
+        else : 
+            print("IO : \tSignal weights are coming from a file")
+            self.weight_signal = ur.open(self.sFile)[self.signal_sample].pandas.df('weight_nominal').to_numpy()*139
+        print("IO : Finished defining signal weights")
+        ##Background Weights:
+        print("IO : Defining background weights")
+        if os.path.isdir(self.bFile): 
+            print("IO : \tBackground weights are coming from a directory")
+            temp_array_background_weights = np.array([])
+            temp_array_background_weights = root_data(self.bFile, self.background_sample, "weight_nominal", False)*139
+            self.weight_background = temp_array_background_weights
+        else : 
+            print("IO : \tBackground weights are coming from a file")
+            self.weight_background = ur.open(self.bFile)[self.background_sample].pandas.df('weight_nominal').to_numpy()*139
+        print("IO : Finished defining background weights")  
 
-#Initializing the data and target samples
-#The split function cuts into a training sample and a test sample
-#Important note: Have to use the same random seed so that event and target stay in the same order as we shuffle
-    def initialize_sample(self):
-        #Signal and background are needed for the classification task, signal and systematic for the adversarial part
-        #In this first step the events are retrieved from the tree, using the chosen set of variables
-        #The numpy conversion is redundant
-        self.events_signal = self.signal_tree.pandas.df(self.variables).to_numpy()
-        self.events_background = self.background_tree.pandas.df(self.variables).to_numpy()
-        #Setting up the weights. The weights for each tree are stored in 'weight_nominal'
-        self.weight_signal = self.signal_tree.pandas.df('weight_nominal').to_numpy()
-        self.weight_background = self.background_tree.pandas.df('weight_nominal').to_numpy()
-        #Rehsaping the weights
-        self.weight_signal = np.reshape(self.weight_signal, (len(self.events_signal), 1))
+        self.weight_signal = np.reshape(self.weight_signal, (len(self.weight_signal), 1))
         self.weight_background = np.reshape(self.weight_background, (len(self.events_background), 1))
         #Normalisation to the eventcount can be used instead of weights, especially if using data
         self.norm_signal = np.reshape([1./float(len(self.events_signal)) for x in range(len(self.events_signal))], (len(self.events_signal), 1))
@@ -147,7 +198,7 @@ class neuralNetworkEnvironment(object):
         scaler = StandardScaler()
         self.sample_training = scaler.fit_transform(self.sample_training)
         self.sample_validation = scaler.fit_transform(self.sample_validation)
-
+        
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Here the discriminator is built
 #It has an input layer fit to the shape of the variables
@@ -283,21 +334,46 @@ class neuralNetworkEnvironment(object):
         plt.gcf().savefig(output_path + 'loss_multi.png')
         plt.gcf().clear()
 
+    def purityPlot(self):
+        (n_s,bins_s,patches_s) = plt.hist(self.signal_histo, range=[0., 1.], bins=50,density=True)
+        (n_b,bins_b,patches_b) = plt.hist(self.background_histo, range=[0., 1.], bins=50,density=True)
+        plt.gcf().clear()
+        nbins= np.linspace((bins_s[0]+bins_s[1])/2,(bins_s[-1]+bins_s[-2])/2,50)
+        self.purity = n_s/(n_s+n_b)
+
+        x = np.linspace(0,1,500)
+        y = x
+
+        ax = plt.subplot(111)
+        ax.tick_params(direction='in')
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        ax.xaxis.set_ticks_position('both')
+        ax.yaxis.set_ticks_position('both')
+        ax.tick_params(direction='in',which='minor', length=2)
+        
+        plt.xlim(0,1)
+        plt.plot(x,y,color='r',linewidth=1)
+        plt.plot(nbins,self.purity,color='blue',marker='+',linestyle ='None',markersize=4.0)
+        plt.xlabel('Network Output')
+        plt.ylabel('Purity')
+        plt.gcf().savefig(output_path + 'purity.png')   
+        plt.gcf().clear()
 
 ## For putting out multible Graphs 
 ## Itterations is how often the loop should go
 ## True=Adam, False=SGD
 ## DOSEN'T put out a Roc, distribution, accuary or loss curve for a single interation
 ## Only for multible.
-def train_multi(iterations, epoch, Adam):
+def train_multi(iterations, Adam):
     ##Arrays for saving Values. They are iterations*epochs large
-    data_acc_array=np.zeros((iterations, epoch))
-    data_loss_array=np.zeros((iterations, epoch))
-    data_acc_val_array=np.zeros((iterations, epoch))
-    data_loss_val_array=np.zeros((iterations, epoch))
+    data_acc_array=np.zeros(iterations, int(sys.argv[10]))
+    data_loss_array=np.zeros(iterations, int(sys.argv[10]))
+    data_acc_val_array=np.zeros(iterations, int(sys.argv[10]))
+    data_loss_val_array=np.zeros(iterations, int(sys.argv[10]))
     ##Trains iterations times. The data is saved. The Variable j is changing, so that different things can be tried out (e.g. learning rate*j)
     for j in range(iterations):
-        first_training = neuralNetworkEnvironment(j, epoch, Adam)
+        first_training = neuralNetworkEnvironment(j, Adam)
         first_training.initialize_sample()
         first_training.buildDiscriminator()
         first_training.trainDiscriminator()
@@ -309,9 +385,9 @@ def train_multi(iterations, epoch, Adam):
 
 
 ## For putting a single Graph. True=Adam, False=SGD. Puts out a Roc, distribution, accuary or loss curve for a single interation.
-def train_single(epoch, Adam):
-    first_training = neuralNetworkEnvironment(1, epoch, Adam)
-    first_training.initialize_sample()
+def train_single(Adam):
+    first_training = neuralNetworkEnvironment(1, Adam)
+    first_training.define_input_and_weights()
     first_training.buildDiscriminator()
     first_training.trainDiscriminator()
     first_training.predictModel()
@@ -319,22 +395,23 @@ def train_single(epoch, Adam):
     first_training.plotSeparation()
     first_training.plotAccuracy()
     first_training.plotLosses()
+    first_training.purityPlot()
 
 ## For putting out SGD vs Adam
 ## True=Adam, False=SGD
 ## DOESN'T put out a Roc, distribution, accuary or loss curve for a single interation
-def train_AdamVsSGD(epoch):
+def train_AdamVsSGD():
     ##Arrays for saving Values. They are iterations*epochs large
-    data_acc_array=np.zeros((2, epoch))
-    data_loss_array=np.zeros((2, epoch))
-    data_acc_val_array=np.zeros((2, epoch))
-    data_loss_val_array=np.zeros((2, epoch))
+    data_acc_array=np.zeros(2, int(sys.argv[10]))
+    data_loss_array=np.zeros(2, int(sys.argv[10]))
+    data_acc_val_array=np.zeros(2, int(sys.argv[10]))
+    data_loss_val_array=np.zeros(2, int(sys.argv[10]))
     ##Trains iterations times. The data is saved. The Variable j is changing, so that different things can be tried out (e.g. learning rate*j)
     for j in range(2):
         if j==0:
-            first_training = neuralNetworkEnvironment(1, epoch, True)
+            first_training = neuralNetworkEnvironment(1, True)
         if j==1:
-            first_training = neuralNetworkEnvironment(1, epoch, False)
+            first_training = neuralNetworkEnvironment(1, False)
         first_training.initialize_sample()
         first_training.buildDiscriminator()
         first_training.trainDiscriminator()
@@ -346,7 +423,7 @@ def train_AdamVsSGD(epoch):
 
 
 #train_multi(10, 10, False)
-train_single(50, False)
+train_single(sys.argv[1])
 #train_AdamVsSGD(20)
 
 
