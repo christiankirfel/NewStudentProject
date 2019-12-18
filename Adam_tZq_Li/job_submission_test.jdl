@@ -1,0 +1,44 @@
+#################################################################################################
+#                            HTCondor Job Submission File 
+# See http://research.cs.wisc.edu/htcondor/manual/current/condor_submit.html for further commands
+#################################################################################################
+
+# Path to executable
+Executable              = /cephfs/user/s6ribaum/python_submissions/test/job-wrapper_test.sh
+# Job process number is given as argument to executable
+Arguments               = "$(Process) $(ADAM) $(LR) $(NODES) $(LAYERS) $(DROPOUT) $(VALIDATION) $(BATCHSIZE) $(DECAY) $(MOMENTUM) $(EPOCH) $(XJ1B)"
+#MOMENTUM is just important if ADAM=False. If not just enter 0 as MOMENTUM
+# Use HTCondors vanilla universe (see http://research.cs.wisc.edu/htcondor/manual/current/2_4Running_Job.html)
+Universe                = vanilla
+
+# Specify files to be transferred (please note that files on CephFS should _NOT_ be transferred!!!)
+# Should executable be transferred from the submit node to the job working directory on the worker node?
+Transfer_executable     = False
+# List of input files to be transferred from the submit node to the job working directory on the worker node
+Transfer_input_files    = 
+# List of output files to be transferred from the job working directory on the worker node to the submit node
+Transfer_output_files   = 
+
+# Specify job input and output
+Error                   = /cephfs/user/s6ribaum/python_submissions/test/err/err_$(Process)_$(ADAM)_$(LR)_$(NODES)_$(LAYERS)_$(DROPOUT)_$(VALIDATION)_$(BATCHSIZE)_$(DECAY)_$(MOMENTUM)_$(EPOCH)_$(XJ1B).err
+Input                   =                                                
+Output                  = /cephfs/user/s6ribaum/python_submissions/test/out/out_$(Process)_$(ADAM)_$(LR)_$(NODES)_$(LAYERS)_$(DROPOUT)_$(VALIDATION)_$(BATCHSIZE)_$(DECAY)_$(MOMENTUM)_$(EPOCH)_$(XJ1B).out                                             
+Log                     = /cephfs/user/s6ribaum/python_submissions/test/log/log_$(Process)_$(ADAM)_$(LR)_$(NODES)_$(LAYERS)_$(DROPOUT)_$(VALIDATION)_$(BATCHSIZE)_$(DECAY)_$(MOMENTUM)_$(EPOCH)_$(XJ1B).log
+
+# Request resources to the best of your knowledge
+# (check log file after job completion to compare requested and used resources)
+# Memory in MiB, if no unit is specified!
+Request_memory          = 8 GB
+Request_cpus            = 2
+# Disk space in kiB, if no unit is specified!
+Request_disk            = 5 GB
+
+# Additional job requirements (note the plus signs)
+# Choose OS (options: "SL6", "CentOS7", "Ubuntu1604")
++ContainerOS            = "CentOS7"
+
+Queue ADAM, LR, NODES, LAYERS, DROPOUT, VALIDATION, BATCHSIZE, DECAY, MOMENTUM, EPOCH, XJ1B from (
+True 1e-05 80 7 0.1 0.8 1024 1e-08 0.2 100 3j1b
+True 1e-05 80 7 0.1 0.2 1024 1e-08 0.8 100 3j1b
+)
+
