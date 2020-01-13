@@ -13,7 +13,7 @@ from timeit import default_timer as timer
 
 from keras.models import Sequential, Model
 
-from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
+from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping
 #from keras.utils import plot_model
 from keras.layers import Dense, Input, BatchNormalization, Dropout, Activation
 from keras import metrics
@@ -43,12 +43,20 @@ color_sys = '#009900'
 color_tW2 = '#02590f'
 color_tt2 = '#FF6600'
 
+# Color Codes for events
+color_ttbar = '#FF3333'
+color_zjets = '#FFCC66'
+color_diboson = '#FFFF00'
+colorST = '#999933'
 
+## Path to MC root files
 my_path_to_data = '/cephfs/user/s6pinogg/PietBachelor/root_fixed_tZq/'
 
 ### If you want to sort the root files, make sure to run
 ### /cephfs/user/s6pinogg/PietBachelor/sort_tHq_loop
 ### in directory with your unsorted root files, it will put them in correct directories
+
+
 data_signal = my_path_to_data + 'tZq/'
 
 data_background_diboson = my_path_to_data + 'diboson/'
@@ -66,28 +74,29 @@ data_background_tchannel = my_path_to_data + 'singleTop/tchannel/'
 data_background_tW = my_path_to_data + 'singleTop/tW/'
 data_background_nBoson = my_path_to_data + 'nBoson/'
 data_background_ZJets = my_path_to_data + 'ZJets/'
-
+##
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 #Setting up the output directories
 output_path = '/cephfs/user/s6pinogg/PietBachelor/New_Samples/jobs/'
-#output_path = './jobs/'
-array_path = output_path + 'arrays/'
-if not os.path.exists(output_path):
-    os.makedirs(output_path)
-if not os.path.exists(array_path):
-    os.makedirs(array_path)
 
+array_path = output_path + 'arrays/'
+
+if not os.path.exists(output_path):
+    os.makedirs(output_path,exist_ok=True)
+if not os.path.exists(array_path):
+    os.makedirs(array_path,exist_ok=True)
+
+### I will save Histograms and Neural Network output in these pathes
 mysavedata = '/cephfs/user/s6pinogg/PietBachelor/Histo_Data/'
 eventHistpath = '/cephfs/user/s6pinogg/PietBachelor/Histo_Event/'
 
-
 if not os.path.exists(mysavedata):
-    os.makedirs(mysavedata)
+    os.makedirs(mysavedata,exist_ok=True)
 if not os.path.exists(eventHistpath):
-    os.makedirs(eventHistpath)
+    os.makedirs(eventHistpath,exist_ok=True)
 
 
 
@@ -99,9 +108,18 @@ class neuralNetworkEnvironment(object):
     def __init__(self):
         #At the moment not may variables are passed to the class. You might want to change this
         #A list of more general settings
-       # self.variables = np.array(['m_b_jf','m_top','eta_jf','mT_W','q_lW','eta_lW','pT_W','pT_lW','m_Z','eta_Z','dR_jf_Z','pT_jf'])
         self.variables = np.array(['m_b_jf','eta_jf','q_lW','eta_lW','pT_W','pT_lW','m_Z','eta_Z','dR_jf_Z','pT_jf','pT_jr','eta_jr','pT_Z','m_met','m_top','mT_W'])
-        #self.variables = np.array(['eta_jf'])
+        # All possible Variables
+        #self.variables = np.array(['pt_lep1','eta_lep1','phi_lep1','E_lep1','charge_lep1','type_lep1',
+        #                           'pt_lep2','eta_lep2','phi_lep2','E_lep2','charge_lep2','type_lep2',
+        #                           'pt_lep3','eta_lep3','phi_lep3','E_lep3','charge_lep3','type_lep3',
+        #                           'm_njets','m_nbjets','pt_bjet1','eta_bjet1','phi_bjet1','E_bjet1','mass_bjet1','m_nNoBjets,
+        #                           'pt_jet1','eta_jet1','phi_jet1','E_jet1','mass_jet1','btagged_jet1',
+        #                           'pt_jet2','eta_jet2','phi_jet2','E_jet2','mass_jet2','btagged_jet2',
+        #                           'pt_jet3','eta_jet3','phi_jet3','E_jet3','mass_jet3','btagged_jet3',
+        #                           'm_met','m_phi_met','m_sumet','m_min_diff_mass','m_b_jf','m_top',
+        #                           'eta_jf','mT_W','q_lW','eta_lW','pT_W','pT_lW',
+        #                           'm_Z','eta_Z','dR_jf_Z','pT_jf','eta_jr','pT_Z','pT_jr','pT_top','eta_top'])
 
         #The seed is used to make sure that both the events and the labels are shuffeled the same way because they are not inherently connected.
         self.seed = 250
@@ -119,40 +137,56 @@ class neuralNetworkEnvironment(object):
         #These arrays are used to save loss and accuracy of the two networks
         #That is also important to later be able to use the plotting software desired. matplotlib is not the best tool at all times
         self.discriminator_history_array = []
+        self.discriminator_history_ttbar_array = []
         self.model_history_array = []
         self.discriminator_history = None
+        self.discriminator_history_ttbar = None
         self.model = None
-        self.network_input = None ###Change###
+        self.network_input = None 
         #Here are the definitions for the two models
-        #All information for the length of the training. Beware that epochs might only come into the pretraining
-        #Iterations are used for the adversarial part of the training
-        #If you want to make the training longer you want to change these numbers, there is no early stopping atm, feel free to add it
-        self.discriminator_epochs = 2200
-        self.batchSize = 512
+        #All information for the length of the training. 
+        #If you want to make the training longer you want to change these numbers
+        self.discriminator_epochs = 20
+        self.batchSize = 628
         #Setup of the networks, nodes and layers
-        self.discriminator_layers = 3
-        self.discriminator_nodes = 40
+        self.discriminator_layers = 2
+        self.discriminator_nodes = 50
         #Setup of the networks, loss and optimisation
-        self.my_optimizer = 'SGD'
-        self.discriminator_lr = 0.009
+        self.my_optimizer = 'Adam'
+        # Setup for SGD
+        self.discriminator_lr = 0.1 
         self.discriminator_momentum = 0.9
         self.discriminator_optimizer = SGD(lr = self.discriminator_lr, momentum = self.discriminator_momentum)
-        self.discriminator_optimizer_adam = Adam(lr = 1e-5,beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay = self.discriminator_lr/self.discriminator_epochs,amsgrad=True)
+        # Setup for Adam
+        self.discriminator_lr_adam = 1e-4
+        self.discriminator_optimizer_adam = Adam(lr = self.discriminator_lr_adam)
+
         self.discriminator_dropout = 0.2
         self.discriminator_loss = 'binary_crossentropy'
-        self.validation_fraction = 0.2
+        self.validation_fraction = 0.3
 
-        self.output_job = output_path + 'epochs_%i/layers_%i/nodes_%i/lr_%.2e/momentum_%.2f/' % (self.discriminator_epochs,self.discriminator_layers,self.discriminator_nodes,self.discriminator_lr,self.discriminator_momentum)
+        # Early stopping and Reduction of learning rate in Callbacks
+        self.reduce_lr = ReduceLROnPlateau(monitor='val_binary_accuracy',factor = 0.8,patience=40,min_delta=1e-3,min_lr=1e-6,verbose=1)
+        self.early_stop = EarlyStopping(monitor='loss',min_delta=1e-6,patience=100,restore_best_weights=True,mode='min',verbose = 1)
+
+        # Output directories for plots etc. 
+        # Different directories depending on the optimizer we are using
+        if (self.my_optimizer== 'Adam'): 
+            self.output_job = output_path + 'epochs_%i/Adam/layers_%i/nodes_%i/lr_%.2e/dropout_%.2f/valfrac_%.2f/' % (self.discriminator_epochs,self.discriminator_layers,self.discriminator_nodes,self.discriminator_lr_adam,self.discriminator_dropout,self.validation_fraction)
+        elif(self.my_optimizer=="SGD"):
+            self.output_job = output_path + 'epochs_%i/SGD/layers_%i/nodes_%i/lr_%.2e/momentum_%.2f/' % (self.discriminator_epochs,self.discriminator_layers,self.discriminator_nodes,self.discriminator_lr,self.discriminator_momentum)
         self.output_lr = output_path + 'epochs_%i/' % (self.discriminator_epochs)
-        self.output_lrcurve = self.output_lr + '/Optimize/%.1e/'%(self.discriminator_momentum)
+
+        # For the hyperparameter impact plots
+        self.output_lrcurve = self.output_lr + 'Optimize/%.1e/'%(self.discriminator_momentum)
         self.output_curve = self.output_lr + 'txtlr/'
 
         if not os.path.exists(self.output_job):
-            os.makedirs(self.output_job)
+            os.makedirs(self.output_job,exist_ok=True)
         if not os.path.exists(self.output_curve):
-            os.makedirs(self.output_curve)
+            os.makedirs(self.output_curve,exist_ok=True)
         if not os.path.exists(self.output_lrcurve):
-            os.makedirs(self.output_lrcurve)
+            os.makedirs(self.output_lrcurve,exist_ok=True)
 
         #The following set of variables is used to evaluate the result
         #fpr = false positive rate, tpr = true positive rate
@@ -165,7 +199,8 @@ class neuralNetworkEnvironment(object):
         self.signal_sample = "tHqLoop_nominal;1"
         self.background_sample = "tHqLoop_nominal;1"
 
-
+    # function for reading the root files with uproot
+    # takes all root files in a directory and conatenates them into numpy arrays
     def read_root(self,pathtoMC,TreeName,BranchName):
         first_iteration = True
         SaveArray = np.array([])
@@ -181,12 +216,13 @@ class neuralNetworkEnvironment(object):
             
             first_iteration = False
         return SaveArray
-    
+    # more general function for putting numpy arrays together
     def ConArrays(self,arrays):
         conarray = np.concatenate(arrays)
         return conarray
 
     def initialize_sample(self):
+        ### Data preperation for training
         ### Signal 
         self.events_signal = self.read_root(data_signal,self.signal_sample,self.variables)
         self.weight_signal = self.read_root(data_signal,self.signal_sample,'weight_nominal') * 139
@@ -238,6 +274,7 @@ class neuralNetworkEnvironment(object):
         ## All background put together
         self.events_background = self.ConArrays([self.events_background_diboson,self.events_background_ttV,self.events_background_ST,self.events_background_ttbar_all])
         self.weight_background = self.ConArrays([self.weights_background_diboson,self.weights_background_ttV,self.weights_background_ST,self.weights_background_ttbar_all])
+        # absolute value of weights have proven to work better
         self.weight_background = np.absolute(self.weight_background)
 
         ### Background for later use (Histogram etc)
@@ -271,49 +308,53 @@ class neuralNetworkEnvironment(object):
         #target combined is used to make sure the systematics are seen as signal for the first net in the combined training
         self.target_signal = np.reshape([1 for x in range(len(self.events_signal))], (len(self.events_signal), 1))
         self.target_background = np.reshape([0 for x in range(len(self.events_background))], (len(self.events_background), 1))
+
         #The samples and corresponding targets are split into a sample for training and a sample for testing. Keep in mind that the same random seed should be used for both splits
         self.sample_training, self.sample_validation = train_test_split(np.concatenate((self.events_signal, self.events_background)), test_size = self.validation_fraction, random_state = self.seed)
         self.target_training, self.target_validation = train_test_split(np.concatenate((self.target_signal, self.target_background)), test_size = self.validation_fraction, random_state = self.seed)
+      
         #Splitting the weights
         self.weight_training, self.weight_validation = train_test_split(np.concatenate((self.weight_signal, self.weight_background)), test_size = self.validation_fraction, random_state = self.seed)
+
         #Setting up a scaler
         #A scaler makes sure that all variables are normalised to 1 and have the same order of magnitude for that reason
         self.scaler_test = StandardScaler().fit(self.sample_training)
-        #self.scaler = StandardScaler()
+        # both training and validation are then transformed in that manner
         self.sample_training = self.scaler_test.transform(self.sample_training)
         self.sample_validation = self.scaler_test.transform(self.sample_validation)
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-        ## Now we want to build our Neural Network
+    ## Now we want to build our Neural Network
     def My_DiscrimatorBuild(self):
+        # Model is built with the Keras Sequential model
         self.model = Sequential()
-        self.model.add(Dense(self.discriminator_nodes,input_shape=(self.input_dimension)))
-        self.model.add(Activation('elu'))
-        for layercount in range(self.discriminator_layers - 1):
+        self.model.add(Dense(self.discriminator_nodes,input_shape=(self.input_dimension),activation='elu'))
+        # setup for every hidden layer is identical
+        for layercount in range(self.discriminator_layers):
             self.model.add(Dense(self.discriminator_nodes,activation = 'elu'))
             self.model.add(BatchNormalization())
             self.model.add(Dropout(self.discriminator_dropout))
+        # output node is binary
         self.model.add(Dense(1,activation='sigmoid'))
-        self.model.compile(loss=binary_crossentropy,metrics=['binary_accuracy'],weighted_metrics = [metrics.binary_accuracy],optimizer = self.discriminator_optimizer)
-        #plot_model(self.model, to_file=self.output_job+'model.png')
-        self.model.summary()
+        self.model.compile(loss=binary_crossentropy,metrics=['binary_accuracy'],weighted_metrics = [metrics.binary_accuracy],optimizer = self.discriminator_optimizer_adam)
 
+        self.model.summary()
 
 
     def trainDiscriminator(self):
         # With our Neural Network set up, we can now fit the training and test data
-        reduce_lr = ReduceLROnPlateau(monitor='binary_accuracy',factor = 0.2,patience=5,min_lr=1e-5)
-        self.discriminator_history = self.model.fit(self.sample_training, self.target_training.ravel(), epochs=self.discriminator_epochs, batch_size = self.batchSize, sample_weight = self.weight_training.ravel(), validation_data = (self.sample_validation, self.target_validation, self.weight_validation.ravel()),callbacks=[reduce_lr])
+        self.discriminator_history = self.model.fit(self.sample_training, self.target_training.ravel(), epochs=self.discriminator_epochs, batch_size = self.batchSize, sample_weight = self.weight_training.ravel(), validation_data = (self.sample_validation, self.target_validation, self.weight_validation.ravel()),callbacks=[self.reduce_lr,self.early_stop])
         self.discriminator_history_array.append(self.discriminator_history)
         print(self.discriminator_history.history.keys())
 
     def predictModel(self):
         # Predict Model on 'unknown' data and analyze predicition with i.e ROC Curve and AUC Value
-        
+        # This is done for training and test sample seperately
         self.model_prediction = self.model.predict(self.sample_training,batch_size=self.batchSize).ravel()
         self.model_prediction_test = self.model.predict(self.sample_validation,batch_size=self.batchSize).ravel()
+
         self.fpr, self.tpr, self.threshold = roc_curve(self.target_training, self.model_prediction)
         self.fpr_test, self.tpr_test, self.threshold_test = roc_curve(self.target_validation, self.model_prediction_test)
         self.auc = auc(self.fpr, self.tpr)
@@ -322,6 +363,10 @@ class neuralNetworkEnvironment(object):
         print('Discriminator AUC Training:', self.auc)
         print('Discriminator AUC Test:', self.auc_test)
 
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    
+    # Evaluation plots of the network
+    # Loss:
     def plotLosses(self):
         ax = plt.subplot(111)
         ax.ticklabel_format(style='sci', axis ='both', scilimits=(-1,2),useMathText=True)
@@ -332,14 +377,13 @@ class neuralNetworkEnvironment(object):
         plt.ylabel('Loss',fontsize=12)
         plt.xlabel('Epoch',fontsize = 12)
         plt.legend(['train', 'test'], loc='upper left')
-#        plt.legend(loc="upper right", prop={'size' : 7})
         plt.gcf().savefig(self.output_job + 'losses.png')
         plt.gcf().clear()
-
+    # ROC-Curve
     def plotRoc(self):
         plt.title('Receiver Operating Characteristic')
-        plt.plot(self.fpr, self.tpr, 'g--',color='blue', label='$AUC_{train}$ = %0.2f'% self.auc)
-        plt.plot(self.fpr_test, self.tpr_test, 'g--',color='orange', label='$AUC_{test}$ = %0.2f'% self.auc_test)
+        plt.plot(self.fpr, self.tpr, 'g--',color='blue', label='$AUC_{train}$ = %0.3f'% self.auc)
+        plt.plot(self.fpr_test, self.tpr_test, 'g--',color='orange', label='$AUC_{test}$ = %0.3f'% self.auc_test)
         plt.legend(loc='lower right')
         plt.plot([0,1],[0,1],'r--')
         plt.xlim([-0.,1.])
@@ -347,10 +391,11 @@ class neuralNetworkEnvironment(object):
         plt.ylabel('True Positive Rate', fontsize='large')
         plt.xlabel('False Positive Rate', fontsize='large')
         plt.legend(frameon=False)
-        #plt.show()
         plt.gcf().savefig(self.output_job + 'roc.png')
         plt.gcf().clear()   
-
+    # Seperation of background and signal in the model's prediction
+    # This is also done for training and signal samples, seperately
+    # creates histogram of network output for signal and background
     def plotSeparation(self):
         self.signal_histo_test = []
         self.background_histo_test = []
@@ -368,7 +413,6 @@ class neuralNetworkEnvironment(object):
         plt.legend(frameon=False)
         plt.gcf().savefig(self.output_job + 'separation_test.png')
         plt.gcf().clear()
-
 
         self.signal_histo = []
         self.background_histo = []
@@ -388,6 +432,7 @@ class neuralNetworkEnvironment(object):
         plt.gcf().savefig(self.output_job + 'separation_training.png')
         plt.gcf().clear()
 
+    # Accuracy plots
     def plotWeightedAccuracy(self):
         ax = plt.subplot(111)
         ax.ticklabel_format(style='sci', axis ='both', scilimits=(-1,2),useMathText=True)
@@ -415,6 +460,9 @@ class neuralNetworkEnvironment(object):
         plt.gcf().savefig(self.output_job + 'acc.png')
         plt.gcf().clear()
 
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    # Write some parameters into txt file for later evaluation
     def ParamstoTxt(self):
         paramsfile = (self.output_job + 'params.txt')
         file = open(paramsfile,'w')
@@ -447,9 +495,9 @@ class neuralNetworkEnvironment(object):
             
 
         file = open(self.output_curve + 'lr_%.1e_la_%i_n_%i.txt'%(self.discriminator_lr,self.discriminator_layers,self.discriminator_nodes),'w')
-        file.write('%.4e,%.4e,%.4e,%.4e,%.4e,%.4e,%.4e,%i,%i'%(self.discriminator_history.history['loss'][-1],self.discriminator_history.history['val_loss'][-1],self.discriminator_lr,self.auc,self.discriminator_history.history['binary_accuracy'][-1],self.discriminator_history.history['val_binary_accuracy'][-1],self.discriminator_momentum,self.discriminator_nodes,self.discriminator_layers))
+        file.write('%.4e,%.4e,%.4e,%.4e,%.4e,%.4e,%.4e,%i,%i,%.4e'%(self.discriminator_history.history['loss'][-1],self.discriminator_history.history['val_loss'][-1],self.discriminator_lr,self.auc_test,self.discriminator_history.history['binary_accuracy'][-1],self.discriminator_history.history['val_binary_accuracy'][-1],self.discriminator_momentum,self.discriminator_nodes,self.discriminator_layers,self.auc))
         file.close()
-
+    # This function takes all models in a directory to make a plot of a parameter against the AUC value. This is done for further evaluation
     def plot_lr(self,filelist):
         with open(self.output_lrcurve + 'plot_lr.txt','w') as self.outfile:
             for fname in filelist:
@@ -465,6 +513,7 @@ class neuralNetworkEnvironment(object):
         momentum_list= []
         nodes = []
         layers = []
+        auc_train_list=[]
         self.outfile = self.output_lrcurve + 'plot_lr.txt'
         results = open(self.outfile,'r')
         for line in results:
@@ -479,6 +528,7 @@ class neuralNetworkEnvironment(object):
             momentum_list.append(float(data[6]))
             nodes.append(int(data[7]))
             layers.append(int(data[8]))
+            auc_train_list.append(float(data[9]))
         lr_list = np.array(lr_list)
         val_loss_plot = np.array(val_loss_plot)
         loss_plot = np.array(loss_plot)
@@ -488,9 +538,16 @@ class neuralNetworkEnvironment(object):
         momentum_list = np.array(momentum_list)
         nodes=np.array(nodes)
         layers= np.array(layers)
+        auc_train=np.array(auc_train_list)
 
         ### Plot Lists
         ax = plt.subplot(111)
+        ax.tick_params(direction='in')
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        ax.xaxis.set_ticks_position('both')
+        ax.yaxis.set_ticks_position('both')
+        ax.tick_params(direction='in',which='minor', length=2)
         plt.plot(lr_list,loss_plot,color = color_tt,label='Training',marker = 'x',linestyle = 'None')
         plt.plot(lr_list,val_loss_plot,color = color_tW,label = 'Test',marker = 'x',linestyle = 'None')
         ax.ticklabel_format(style='sci', axis ='both', scilimits=(-2,2),useMathText = True)
@@ -502,6 +559,12 @@ class neuralNetworkEnvironment(object):
         plt.gcf().clear()
 
         ax = plt.subplot(111)
+        ax.tick_params(direction='in')
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        ax.xaxis.set_ticks_position('both')
+        ax.yaxis.set_ticks_position('both')
+        ax.tick_params(direction='in',which='minor', length=2)
         ax.ticklabel_format(style='sci', axis ='both', scilimits=(-2,2),useMathText = True)
         ax.set_xscale("log", nonposx='clip')
         plt.plot(lr_list,auc_list, color = 'navy', marker = 'x', linestyle = 'None',label='AUC Value')
@@ -511,26 +574,42 @@ class neuralNetworkEnvironment(object):
         plt.gcf().savefig(self.output_lrcurve+'LRAucPlot.png')
         plt.gcf().clear()
 
-        ax = plt.subplot(111)
+        ax = plt.figure().gca()
+        ax.tick_params(direction='in')
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        ax.xaxis.set_ticks_position('both')
+        ax.yaxis.set_ticks_position('both')
+        ax.tick_params(direction='in',which='minor', length=2)
         ax.ticklabel_format(style='sci', axis ='both', scilimits=(-2,2),useMathText = True)
-        plt.plot(layers,auc_list,color='navy',marker='x',linestyle='None',label='AUC Value')
+        plt.plot(layers,auc_list,color='navy',marker='x',linestyle='None',label='$AUC_{test}$')
+        plt.plot(layers,auc_train,color='orange',marker='x',linestyle='None',label='$AUC_{train}$')
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         plt.xlabel('Number hidden layers')
         plt.legend()
-        plt.title('Impact of # hidden layers')
+        #plt.title('Impact of # hidden layers')
         plt.gcf().savefig(self.output_lrcurve+'layerimpact.png')
         plt.gcf().clear()
 
-        ax = plt.subplot(111)
+        ax = plt.figure().gca()
+        ax.tick_params(direction='in')
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        ax.xaxis.set_ticks_position('both')
+        ax.yaxis.set_ticks_position('both')
+        ax.tick_params(direction='in',which='minor', length=2)
         ax.ticklabel_format(style='sci', axis ='both', scilimits=(-2,4),useMathText = True)
-        plt.plot(nodes,auc_list,color='navy',marker='x',linestyle='None',label='AUC Value')
+        plt.plot(nodes,auc_list,color='navy',marker='x',linestyle='None',label='$AUC_{test}$')
+        plt.plot(nodes,auc_train,color='orange',marker='x',linestyle='None',label='$AUC_{train}$')
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         plt.xlabel('Number nodes in hidden layer')
         plt.legend()
-        plt.title('Impact of # nodes')
+        #plt.title('Impact of # nodes')
         plt.gcf().savefig(self.output_lrcurve+'nodesimpact.png')
         plt.gcf().clear()
 
+    # for purity as a linear function. This is to compare Keras to NeuroaBayes better (see internal tZq note)
     def purityPlot(self):
-
 
         (n_s,bins_s,patches_s) = plt.hist(self.signal_histo_test, range=[0., 1.], bins=50,density=True)
         (n_b,bins_b,patches_b) = plt.hist(self.background_histo_test, range=[0., 1.], bins=50,density=True)
@@ -559,7 +638,7 @@ class neuralNetworkEnvironment(object):
         
 
 
-    ## Function to plot Histogram of Variables, with parameters s.t. you can hist any variable
+    ## Function to plot Histogram of Variables, with input parameters s.t. you can hist any variable
     def HistObject(self,Xaxisbins,Yaxisbins,range1,range2,bins,labelxaxis,savelabel,numbervariable):
 
 
@@ -592,11 +671,11 @@ class neuralNetworkEnvironment(object):
 
         ax.tick_params(direction='in',which='minor', length=2)
 
-        plt.hist(self.hist_tZq[numbervariable], range=[range1, range2], linewidth = .75, bins=bins, histtype="step", color='magenta',label='tZq',density = True)
-        plt.hist(self.hist_diboson[numbervariable], range=[range1, range2], linewidth = .75, bins=bins, histtype="step", color='royalblue',label='diboson',density = True)
-        plt.hist(self.hist_ttbar_tW[numbervariable], range=[range1, range2], linewidth = .75, bins=bins, histtype="step", color='red',label=r'$t\bar{t}+tW$',density = True)
-        plt.hist(self.hist_ttZ_tWZ[numbervariable], range=[range1, range2], linewidth = .75, bins=bins, histtype="step", color='lime',label=r'$ttZ+tWZ$',density = True)
-        plt.hist(self.hist_ZJets[numbervariable], range=[range1, range2], linewidth = .75, bins=bins, histtype="step", color='orange',label=r'$Z+Jets$',density = True)
+        plt.hist(self.hist_tZq[numbervariable], range=[range1, range2], linewidth = 2, bins=bins, histtype="step", color='magenta',label='tZq',density = True)
+        plt.hist(self.hist_diboson[numbervariable], range=[range1, range2], linewidth = 2, bins=bins, histtype="step", color=color_diboson,label='diboson',density = True)
+        plt.hist(self.hist_ttbar_tW[numbervariable], range=[range1, range2], linewidth = 2, bins=bins, histtype="step", color=color_ttbar,label=r'$t\bar{t}+tW$',density = True)
+        plt.hist(self.hist_ttZ_tWZ[numbervariable], range=[range1, range2], linewidth = 2, bins=bins, histtype="step", color=colorST,label=r'$ttZ+tWZ$',density = True)
+        plt.hist(self.hist_ZJets[numbervariable], range=[range1, range2], linewidth = 2, bins=bins, histtype="step", color=color_zjets,label=r'$Z+Jets$',density = True)
 
         plt.legend(frameon = False)
 
@@ -624,7 +703,7 @@ class neuralNetworkEnvironment(object):
         plt.legend()
         plt.gcf().savefig(eventHistpath + savelabel + '.png')
         plt.gcf().clear()
-        
+    # Maybe useful to know the runtime of the program...
     def Runtime(self,start,stop):
         file = open(self.output_job + 'params.txt','a')
         file.write('Runtime of program: %.2f seconds' % (stop-start))
@@ -644,15 +723,13 @@ training.plotWeightedAccuracy()
 training.plotAccuracy()
 training.purityPlot()
 training.ParamstoTxt()
-
-
 ###
-training.histPrediction(training.events_signal,'magenta','tZq','tZq')
-training.histPrediction(training.events_background_diboson,'darkturquoise','Diboson','diboson')
-training.histPrediction(training.events_background_ZJets,'orange','Z+Jets','ZJets')
-training.histPrediction(training.events_background_ttbar_tW,'red',r'$t\bar{t} + tW$','ttbartw')
-training.histPrediction(training.events_background_ttZ_tWZ_ttH,'lime',r'$t\bar{t}Z + t\bar{t}H + tWZ$','ttvtthtwz')
-training.histPrediction(training.events_background_tt2l,'red',r'$t\bar{t} 2l$','ttbar2l')
+#training.histPrediction(training.events_signal,'magenta','tZq','tZq')
+#training.histPrediction(training.events_background_diboson,'gold','Diboson','diboson')
+#training.histPrediction(training.events_background_ttbar_tW,color_ttbar,r'$t\bar{t} + tW$','ttbar')
+#training.histPrediction(training.events_background_ZJets,color_zjets,'Z+Jets','ZJets')
+#training.histPrediction(training.events_background_ttZ_tWZ_ttH,colorST,r'$t\bar{t}Z + t\bar{t}H + tWZ$','ttvtthtwz')
+
 #self.variables = np.array(['m_b_jf','eta_jf','q_lW','eta_lW','pT_W','pT_lW','m_Z','eta_Z','dR_jf_Z','pT_jf','pT_jr','eta_jr','pT_Z','m_met','m_top','mT_W'])
 #training.HistObject(10,5,0,800,16,'$m(bj_F)$','m_b_jf',0)
 #training.HistObject(10,5,0,5,15,'$\eta(j_f)$','eta_jf',1)

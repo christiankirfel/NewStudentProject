@@ -1,0 +1,13 @@
+We are using the Adam optimizer at the moment
+Number of epochs: 2015
+Batch Size: 628
+Number of hidden layers: 2
+Number of nodes: 50
+Dropout: 0.20
+Validation fraction: 0.50
+Learning rate:1.000e-01
+Momentum:0.90
+Loss after 2015 epochs: 9.31874e-04
+Validation Loss after 2015 epochs: 9.24566e-04
+Discriminator AUC:0.880
+Runtime of program: 25490.06 seconds
