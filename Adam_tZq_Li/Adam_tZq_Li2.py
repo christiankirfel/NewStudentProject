@@ -3,6 +3,7 @@ import os
 import keras
 import math
 import sys
+import EarlyStopping_multible
 from keras.models import Sequential, Model
 from keras.layers import Dense, Input, BatchNormalization, Dropout
 from keras.callbacks import EarlyStopping
@@ -45,9 +46,10 @@ def root_data(inputfile, tree_name, branch_name, verbose):
             temp_array = np.concatenate([temp_array, value_array])
     return temp_array
 
+
 #Setting up the output directories
-output_path = 'output/output_test_XJ1B/Adam_' + sys.argv[1] + '_Lr_' + sys.argv[2] + '_Nodes_' + sys.argv[3] + '_Layers_' + sys.argv[4] + '_Dropout_' + sys.argv[5]
-output_path = output_path +'_Validation_' + sys.argv[6] + '_Batchsize_' + sys.argv[7] + '_Decay_' + sys.argv[8] + '_Momentum_' + sys.argv[9] + '_' + sys.argv[11] + '/'
+output_path = 'output/2j1b_final/Lr/Adam_' + sys.argv[1] + '_Lr_' + sys.argv[2] + '_Nodes_' + sys.argv[3] + '_Layers_' + sys.argv[4] + '_Dropout_' + sys.argv[5]
+output_path = output_path +'_Validation_' + sys.argv[6] + '_Batchsize_' + sys.argv[7] + '_Decay_' + sys.argv[8] + '_Momentum_' + sys.argv[9] + '_' + sys.argv[10] + '_' + sys.argv[11] + '/'
 array_path = output_path + 'arrays/'
 if not os.path.exists(output_path):
     os.makedirs(output_path)
@@ -77,11 +79,11 @@ class neuralNetworkEnvironment(object):
         ###Testing multible input files
         #self.dataFile  = "/cephfs/user/s6taholm/tHq/run/out/halloween_tZqFixed/tZq/mc16a.412063.aMCPy8EG_tllq_nf4.FS.nominal.root"
         if (sys.argv[11] == "3j1b"):
-            self.sFile     = "/cephfs/user/s6ribaum/gitlab/run/condor/root_output/Signal"
-            self.bFile     = "/cephfs/user/s6ribaum/gitlab/run/condor/root_output/Background"
+            self.sFile     = "/cephfs/user/s6ribaum/gitlab/run/condor/Data/3j1b/Signal"      #root_output
+            self.bFile     = "/cephfs/user/s6ribaum/gitlab/run/condor/Data/3j1b/Background"
         if (sys.argv[11] == "2j1b"):
-            self.sFile     = "/cephfs/user/s6ribaum/gitlab/run/condor/Data_2j1b/Signal"
-            self.bFile     = "/cephfs/user/s6ribaum/gitlab/run/condor/Data_2j1b/Background"
+            self.sFile     = "/cephfs/user/s6ribaum/gitlab/run/condor/Data/2j1b/Signal"
+            self.bFile     = "/cephfs/user/s6ribaum/gitlab/run/condor/Data/2j1b/Background"
         self.signal_sample = "tHqLoop_nominal;1"
         self.background_sample = "tHqLoop_nominal;1"
         self.sample_training = None
@@ -127,7 +129,7 @@ class neuralNetworkEnvironment(object):
 
         #Adding Callbacks for model and training
         # = {'monitor':'val_loss','min_delta':1,'patience':2,'mode':'min'}
-        self.earlystop = keras.callbacks.EarlyStopping(monitor='val_loss'-'loss', min_delta=1, patience=5, verbose=0, mode='min')
+        self.earlystop = EarlyStopping_multible.EarlyStopping(monitor1='val_loss', monitor2='loss', patience=10, verbose=0, mode='min', restore_best_weights=True)
         
 
         ##Test from CWoLa_defs.py
@@ -138,7 +140,7 @@ class neuralNetworkEnvironment(object):
         if os.path.isdir(self.sFile): 
             print("IO : \tSignal events are coming from a directory")
             temp_array_signal_events = np.array([])
-            temp_array_signal_events = root_data(self.sFile, self.signal_sample, self.variables, True)
+            temp_array_signal_events = root_data(self.sFile, self.signal_sample, self.variables, False)
             self.events_signal = temp_array_signal_events      
         else : 
             print("IO : \tSignal events are coming from a file")
@@ -149,7 +151,7 @@ class neuralNetworkEnvironment(object):
         if os.path.isdir(self.bFile): 
             print("IO : \tBackground events are coming from a directory")
             temp_array_background_events = np.array([])
-            temp_array_background_events = root_data(self.bFile, self.background_sample, self.variables, True)
+            temp_array_background_events = root_data(self.bFile, self.background_sample, self.variables, False)
             self.events_background = temp_array_background_events
         else : 
             print("IO : \tBackground events are coming from a file")
@@ -160,7 +162,7 @@ class neuralNetworkEnvironment(object):
         if os.path.isdir(self.sFile): 
             print("IO : \tSignal weights are coming from a directory")
             temp_array_signal_weights = np.array([])
-            temp_array_signal_weights = root_data(self.sFile, self.signal_sample, "weight_nominal", True)*139
+            temp_array_signal_weights = root_data(self.sFile, self.signal_sample, "weight_nominal", False)*139
             self.weight_signal = temp_array_signal_weights    
         else : 
             print("IO : \tSignal weights are coming from a file")
@@ -171,7 +173,7 @@ class neuralNetworkEnvironment(object):
         if os.path.isdir(self.bFile): 
             print("IO : \tBackground weights are coming from a directory")
             temp_array_background_weights = np.array([])
-            temp_array_background_weights = root_data(self.bFile, self.background_sample, "weight_nominal", True)*139
+            temp_array_background_weights = root_data(self.bFile, self.background_sample, "weight_nominal", False)*139
             self.weight_background = temp_array_background_weights
         else : 
             print("IO : \tBackground weights are coming from a file")
@@ -235,7 +237,7 @@ class neuralNetworkEnvironment(object):
         #print(self.target_training[-1:-100])
 
         self.model_discriminator.summary()
-        self.discriminator_history = self.model_discriminator.fit(self.sample_training, self.target_training.ravel(), epochs=self.discriminator_epochs, batch_size = self.batchSize, sample_weight = self.weight_training.ravel(), validation_data = (self.sample_validation, self.target_validation, self.weight_validation.ravel()), callbacks=[self.earlystop])
+        self.discriminator_history = self.model_discriminator.fit(self.sample_training, self.target_training.ravel(), epochs=self.discriminator_epochs, verbose=2, batch_size = self.batchSize, sample_weight = self.weight_training.ravel(), validation_data = (self.sample_validation, self.target_validation, self.weight_validation.ravel()), callbacks=[self.earlystop])
         self.discriminator_history_array.append(self.discriminator_history)
         print(self.discriminator_history.history.keys())
 
@@ -251,22 +253,29 @@ class neuralNetworkEnvironment(object):
 
         print('Discriminator AUC:', self.auc_test)
 
-    def plotLosses(self):
+    def plotLosses(self, multi, data_loss_array, data_loss_val_array, changing_parameter_array):
         ax = plt.subplot(111)
-        plt.plot(self.discriminator_history.history['loss'])
-        plt.plot(self.discriminator_history.history['val_loss'])
+        if (multi==False):
+            plt.plot(self.discriminator_history.history['loss'])
+            plt.plot(self.discriminator_history.history['val_loss'])
+        elif (multi==True):
+            plt.plot(changing_parameter_array, data_loss_array)
+            plt.plot(changing_parameter_array, data_loss_val_array)
         plt.title('Discriminator Losses')
         plt.ylabel('Loss')
         plt.xlabel('Epoch')
         plt.legend(['train', 'test'], loc='upper left')
-#       plt.legend(loc="upper right", prop={'size' : 7})
         ax.ticklabel_format(style='sci', axis ='both', scilimits=(0,0))
         plt.gcf().savefig(output_path + 'losses.png')
 
-    def plotRoc(self):
+    def plotRoc(self, multi, data_auc_array, data_auc_val_array, changing_parameter_array):
         plt.title('Receiver Operating Characteristic')
-        plt.plot(self.fpr_training, self.tpr_training, 'b--', label='$AUC_{train}$ = %0.2f'% self.auc_training)
-        plt.plot(self.fpr_test, self.tpr_test, 'g--', label='$AUC_{test}$ = %0.2f'% self.auc_test)
+        if (multi==False):
+            plt.plot(self.fpr_training, self.tpr_training, 'b--', label='$AUC_{train}$ = %0.2f'% self.auc_training)
+            plt.plot(self.fpr_test, self.tpr_test, 'g--', label='$AUC_{test}$ = %0.2f'% self.auc_test)
+        elif (multi==True):
+            plt.plot(changing_parameter_array, data_auc_array)
+            plt.plot(changing_parameter_array, data_auc_val_array)
         plt.legend(loc='lower right')
         plt.plot([0,1],[0,1],'r--')
         plt.xlim([-0.,1.])
@@ -279,6 +288,20 @@ class neuralNetworkEnvironment(object):
         #plt.gcf().savefig(output_path + 'simple_ROC_' + file_extension + '.eps')
         plt.gcf().clear()
 
+    def plotAccuracy(self, multi, data_acc_array, data_acc_val_array, changing_parameter_array):
+        if (multi==False):
+            plt.plot(self.discriminator_history.history['weighted_binary_accuracy'])
+            plt.plot(self.discriminator_history.history['val_weighted_binary_accuracy'])
+        elif (multi==True):
+            plt.plot(changing_parameter_array, data_acc_array)
+            plt.plot(changing_parameter_array, data_acc_val_array)
+        plt.title('model accuracy')
+        plt.ylabel('accuracy')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'test'], loc='upper left')
+        plt.gcf().savefig(output_path + 'acc.png')
+        plt.gcf().clear()
+
     def plotSeparation(self):
         self.signal_histo = []
         self.background_histo = []
@@ -286,8 +309,7 @@ class neuralNetworkEnvironment(object):
             if self.target_training[i] == 1:
                 self.signal_histo.append(self.model_prediction_training[i])
             if self.target_training[i] == 0:
-                self.background_histo.append(self.model_prediction_training[i])
-                
+                self.background_histo.append(self.model_prediction_training[i])           
         plt.hist(self.signal_histo, range=[0., 1.], linewidth = 2, bins=30, histtype="step", density = True, color=color_tW, label = "Signal")
         plt.hist(self.background_histo, range=[0., 1.], linewidth = 2, bins=30, histtype="step", density = True, color=color_tt, label = "Background")
         plt.legend()
@@ -297,24 +319,11 @@ class neuralNetworkEnvironment(object):
         plt.gcf().savefig(output_path + 'separation_discriminator.png')
         plt.gcf().clear()
 
-
-    def plotAccuracy(self):
-        plt.plot(self.discriminator_history.history['weighted_binary_accuracy'])
-        plt.plot(self.discriminator_history.history['val_weighted_binary_accuracy'])
-        plt.title('model accuracy')
-        plt.ylabel('accuracy')
-        plt.xlabel('epoch')
-        plt.legend(['train', 'test'], loc='upper left')
-        plt.gcf().savefig(output_path + 'acc.png')
-        plt.gcf().clear()
-
-
     def saveData(self, loop, data_acc_array, data_loss_array, data_acc_val_array, data_loss_val_array):
         data_acc_array[loop]=self.discriminator_history.history['weighted_binary_accuracy']
         data_acc_val_array[loop]=self.discriminator_history.history['val_weighted_binary_accuracy']
         data_loss_array[loop]=self.discriminator_history.history['loss']
         data_loss_val_array[loop]=self.discriminator_history.history['val_loss']
-
 
     def plotAccuracy_multi(self, iterations, data_acc_array):
         for i in range(iterations):
@@ -326,7 +335,6 @@ class neuralNetworkEnvironment(object):
         plt.gcf().set_size_inches(9,6)
         plt.gcf().savefig(output_path + 'acc_multi.png')
         plt.gcf().clear()
-
 
     def plotloss_multi(self, iterations, data_loss_array):
         for i in range(iterations):
@@ -345,18 +353,15 @@ class neuralNetworkEnvironment(object):
         plt.gcf().clear()
         nbins= np.linspace((bins_s[0]+bins_s[1])/2,(bins_s[-1]+bins_s[-2])/2,50)
         self.purity = n_s/(n_s+n_b)
-
         x = np.linspace(0,1,500)
         y = x
-
         ax = plt.subplot(111)
         ax.tick_params(direction='in')
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.xaxis.set_ticks_position('both')
         ax.yaxis.set_ticks_position('both')
-        ax.tick_params(direction='in',which='minor', length=2)
-        
+        ax.tick_params(direction='in',which='minor', length=2)     
         plt.xlim(0,1)
         plt.plot(x,y,color='r',linewidth=1)
         plt.plot(nbins,self.purity,color='blue',marker='+',linestyle ='None',markersize=4.0)
@@ -396,11 +401,42 @@ def train_single(Adam):
     first_training.buildDiscriminator()
     first_training.trainDiscriminator()
     first_training.predictModel()
-    first_training.plotRoc()
+    first_training.plotRoc(False, 0, 0, 0)
     first_training.plotSeparation()
-    first_training.plotAccuracy()
-    first_training.plotLosses()
-    first_training.purityPlot()
+    first_training.plotAccuracy(False, 0, 0, 0)
+    first_training.plotLosses(False, 0, 0, 0)
+    #first_training.purityPlot()
+    f= open(array_path + 'Daten.txt','w+')
+    #accuracy=0
+    #loss=0
+    #val_accuracy=0
+    #val_loss=0
+    #if (int(sys.argv[10])>5):
+        #i=5
+    #else:
+        #i=1
+    i=1
+    while (i>0):
+        for j in range (1, 12):
+            f.write(sys.argv[j])
+            f.write(";")
+        #accuracy=accuracy+first_training.discriminator_history.history['weighted_binary_accuracy'][len(first_training.discriminator_history.history['weighted_binary_accuracy'])-i]
+        f.write(str(first_training.discriminator_history.history['weighted_binary_accuracy'][len(first_training.discriminator_history.history['weighted_binary_accuracy'])-i]))
+        f.write(";")
+        #loss=loss+first_training.discriminator_history.history['loss'][len(first_training.discriminator_history.history['loss'])-i]
+        f.write(str(first_training.discriminator_history.history['loss'][len(first_training.discriminator_history.history['loss'])-i]))
+        f.write(";")
+        #val_accuracy=val_accuracy+first_training.discriminator_history.history['val_weighted_binary_accuracy'][len(first_training.discriminator_history.history['val_weighted_binary_accuracy'])-i]
+        f.write(str(first_training.discriminator_history.history['val_weighted_binary_accuracy'][len(first_training.discriminator_history.history['val_weighted_binary_accuracy'])-i]))
+        f.write(";")
+        #val_loss=val_loss+first_training.discriminator_history.history['val_loss'][len(first_training.discriminator_history.history['val_loss'])-i]
+        f.write(str(first_training.discriminator_history.history['val_loss'][len(first_training.discriminator_history.history['val_loss'])-i]))
+        f.write("\n")
+        i=i-1
+    #if (int(sys.argv[10])>5):
+        #f.write("\n")
+        #f.write(str(accuracy/5)+";"+str(loss/5)+";"+str(val_accuracy/5)+";"+str(val_loss/5))
+    f.close() 
 
 ## For putting out SGD vs Adam
 ## True=Adam, False=SGD
@@ -411,7 +447,7 @@ def train_AdamVsSGD():
     data_loss_array=np.zeros(2, int(sys.argv[10]))
     data_acc_val_array=np.zeros(2, int(sys.argv[10]))
     data_loss_val_array=np.zeros(2, int(sys.argv[10]))
-    ##Trains iterations times. The data is saved. The Variable j is changing, so that different things can be tried out (e.g. learning rate*j)
+    ##Trains iterations times. Thtrain_for_loss()e data is saved. The Variable j is changing, so that different things can be tried out (e.g. learning rate*j)
     for j in range(2):
         if j==0:
             first_training = neuralNetworkEnvironment(1, True)
@@ -427,9 +463,38 @@ def train_AdamVsSGD():
     first_training.plotAccuracy_multi(2, data_acc_array)
 
 
+def train_for_loss(iterations, Adam):
+    begin=1
+    end=16
+    data_auc_array=np.zeros(iterations)
+    data_acc_array=np.zeros(iterations)
+    data_loss_array=np.zeros(iterations)
+    data_auc_val_array=np.zeros(iterations)
+    data_acc_val_array=np.zeros(iterations)
+    data_loss_val_array=np.zeros(iterations)
+    changing_parameter_array=np.arange(begin, end, int((end-begin)/iterations))
+    for j in range(iterations):
+        first_training = neuralNetworkEnvironment(changing_parameter_array[j], Adam)
+        first_training.define_input_and_weights()
+        first_training.buildDiscriminator()
+        first_training.trainDiscriminator()
+        first_training.predictModel()
+        data_auc_array[j]=first_training.auc_training
+        data_acc_array[j]=first_training.discriminator_history.history['weighted_binary_accuracy'][len(first_training.discriminator_history.history['weighted_binary_accuracy'])-1]
+        data_loss_array[j]=first_training.discriminator_history.history['loss'][len(first_training.discriminator_history.history['loss'])-1]
+        data_auc_val_array[j]=first_training.auc_test
+        data_acc_val_array[j]=first_training.discriminator_history.history['val_weighted_binary_accuracy'][len(first_training.discriminator_history.history['val_weighted_binary_accuracy'])-1]
+        data_loss_val_array[j]=first_training.discriminator_history.history['val_loss'][len(first_training.discriminator_history.history['val_loss'])-1]
+
+    print("data_loss_array:", data_auc_array, data_acc_array, data_loss_array, data_auc_val_array, data_acc_val_array, data_loss_val_array)
+    #first_training.plotRoc(True, data_auc_array, data_acc_val_array, changing_parameter_array)
+    first_training.plotAccuracy(True, data_acc_array, data_acc_val_array, changing_parameter_array)
+    first_training.plotLosses(True, data_loss_array, data_loss_val_array, changing_parameter_array)
+
+
 #train_multi(10, 10, False)
 train_single(sys.argv[1])
 #train_AdamVsSGD(20)
-
+#train_for_loss(15, sys.argv[1])
 
 
